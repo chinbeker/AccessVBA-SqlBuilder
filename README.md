@@ -335,6 +335,7 @@ End Sub
 Public Sub SubQueryExample()
     Dim subSql As New SqlBuilder
     Dim sql As New SqlBuilder
+    Dim rs As DAO.Recordset
 
     ' 子查询：筛选出成年用户
     subSql.Field "UserID"
