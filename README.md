@@ -331,9 +331,32 @@ End Sub
 ### 11. 子查询（派生表）
 
 ```vba
+' 示例1：FROM 子查询（将子查询作为数据源）
 Public Sub SubQueryExample()
     Dim subSql As New SqlBuilder
-    Dim mainSql As New SqlBuilder
+    Dim sql As New SqlBuilder
+
+    ' 子查询：筛选出成年用户
+    subSql.Field "UserID"
+    subSql.Field "Name"
+    subSql.Field "Age"
+    subSql.From "Users"
+    subSql.Where "Age >= 18"
+
+    ' 主查询：从子查询结果中继续查询
+    sql.Field "u.Name"
+    sql.Field "u.Age"
+    sql.From subSql, "u"         ' 关键：直接使用子查询作为数据源，并同时设置别名
+    sql.Where "u.Age < 30"
+    sql.Order "u.Age"
+    Set rs = DbSql.Find(sql)
+End Sub
+
+
+' 示例2：JOIN 子查询（将子查询作为连接表）
+Public Sub SubQueryExample()
+    Dim subSql As New SqlBuilder
+    Dim sql As New SqlBuilder
     Dim rs As DAO.Recordset
 
     ' 子查询：获取每个部门的平均工资
@@ -341,17 +364,17 @@ Public Sub SubQueryExample()
     subSql.Field "AVG(Salary)", , "AvgSalary"
     subSql.From "Employees"
     subSql.Group "DepartmentID"
-    subSql.Derived "DeptAvg"  ' 设置别名
+    subSql.Derived "DeptAvg"         ' 关键：设置别名
 
     ' 主查询：连接子查询
-    mainSql.Field "Employees.Name"
-    mainSql.Field "Employees.Salary"
-    mainSql.Field "DeptAvg.AvgSalary"
-    mainSql.From "Employees"
-    mainSql.Join subSql, "Employees", "DepartmentID", "DepartmentID"
-    mainSql.Where "Employees.Salary > DeptAvg.AvgSalary"
+    sql.Field "Employees.Name"
+    sql.Field "Employees.Salary"
+    sql.Field "DeptAvg.AvgSalary"
+    sql.From "Employees"
+    sql.Join subSql, "Employees", "DepartmentID", "DepartmentID"
+    sql.Where "Employees.Salary > DeptAvg.AvgSalary"
 
-    Set rs = DbSql.Find(mainSql)
+    Set rs = DbSql.Find(sql)
 End Sub
 ```
 
