@@ -10,6 +10,17 @@ Attribute VB_Exposed = False
 
 '@Lang VBA
 
+' ============================================================================
+' Access VBA SQL Builder
+' Repository: https://github.com/chinbeker/AccessVBA-SqlBuilder
+' License: MIT
+' Author: huachen
+' Version: 1.0.0
+' Created: 2026
+' Description: Fluent SQL builder and database helper for Access VBA
+' ============================================================================
+
+
 Option Compare Database
 Option Explicit
 
