@@ -510,7 +510,7 @@ End Sub
 ### 18. 引用字段和表达式
 
 ```vba
-Public Sub FieldReferenceExample()
+Public Sub FieldValueReferenceExample()
     Dim sql As New SqlBuilder
     Dim rs As DAO.Recordset
 
