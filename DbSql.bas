@@ -27,21 +27,9 @@ Private Function IsEmptyString(ByVal str As Variant) As Boolean
         IsEmptyString = True
     End If
 End Function
-' 判断空白字符串
-Private Function IsWhiteSpaceString(ByVal str As Variant) As Boolean
-    If VBA.VarType(str) = VBA.vbString Then
-        IsWhiteSpaceString = (VBA.Len(VBA.Trim(str)) = 0)
-    Else
-        IsWhiteSpaceString = True
-    End If
-End Function
 ' 错误消息
-Private Sub ShowError(ByRef ErrorObject As Object, Optional ByVal Message As String)
-    If Not IsMissing(Message) And Not IsEmptyString(Message) Then
-        MsgBox Message, vbCritical + vbOKOnly, "系统错误"
-    Else
-        MsgBox ErrorObject.Description, vbCritical + vbOKOnly, "系统错误"
-    End If
+Private Sub ShowError(ByRef ErrorObject As Object)
+    MsgBox "发生错误：                         " & vbCrLf & vbCrLf & ErrorObject.Description, vbCritical + vbOKOnly, "系统错误"
 End Sub
 
 ' 建立数据库连接
@@ -54,6 +42,22 @@ ErrorHandler:
     Call ShowError(Err)
     Exit Sub
 End Sub
+
+'检查表是否存在
+Public Function TableExists(ByVal TableName As String) As Boolean
+    On Error Resume Next
+    If Not StringBase.IsNullOrEmpty(TableName) Then
+        Dim tdf As DAO.TableDef
+        Call CreateConnection
+        Set tdf = Database.TableDefs(TableName)
+        If Not tdf Is Nothing Then
+            TableExists = (Left(tdf.Name, 4) <> "MSys")
+            Set tdf = Nothing
+        End If
+    End If
+    Err.Clear
+    On Error GoTo 0
+End Function
 
 ' 引用字段（拼接SQL字符串时不会加引号）
 Public Function Field(ByVal Name As String) As String
@@ -640,10 +644,10 @@ End Function
 ' 联合查询（去重）
 Public Function Union(ParamArray SqlBuilders() As Variant) As DAO.Recordset
     On Error GoTo ErrorHandler
-    Dim length As Long
-    length = UBound(SqlBuilders) - LBound(SqlBuilders) + 1
+    Dim Length As Long
+    Length = UBound(SqlBuilders) - LBound(SqlBuilders) + 1
 
-    If length < 2 Then
+    If Length < 2 Then
         MsgBox "至少需要两个查询进行 Union", vbCritical + vbOKOnly, "系统错误"
         Exit Function
     End If
@@ -655,8 +659,8 @@ Public Function Union(ParamArray SqlBuilders() As Variant) As DAO.Recordset
     TempSql = SqlBuilders(LBound(SqlBuilders)).ToSqlString(0, False)
 
     SqlString = TempSql
-    length = UBound(SqlBuilders)
-    For i = (LBound(SqlBuilders) + 1) To length
+    Length = UBound(SqlBuilders)
+    For i = (LBound(SqlBuilders) + 1) To Length
         If TypeOf SqlBuilders(i) Is SqlBuilder Then
             TempSql = SqlBuilders(i).ToSqlString(0, False)
             SqlString = SqlString & " UNION " & TempSql
@@ -683,10 +687,10 @@ End Function
 ' 联合查询（有重复）
 Public Function UnionAll(ParamArray SqlBuilders() As Variant) As DAO.Recordset
     On Error GoTo ErrorHandler
-    Dim length As Long
-    length = UBound(SqlBuilders) - LBound(SqlBuilders) + 1
+    Dim Length As Long
+    Length = UBound(SqlBuilders) - LBound(SqlBuilders) + 1
 
-    If length < 2 Then
+    If Length < 2 Then
         MsgBox "至少需要两个查询进行 Union", vbCritical + vbOKOnly, "系统错误"
         Exit Function
     End If
@@ -698,8 +702,8 @@ Public Function UnionAll(ParamArray SqlBuilders() As Variant) As DAO.Recordset
     TempSql = SqlBuilders(LBound(SqlBuilders)).ToSqlString(0, False)
 
     SqlString = TempSql
-    length = UBound(SqlBuilders)
-    For i = (LBound(SqlBuilders) + 1) To length
+    Length = UBound(SqlBuilders)
+    For i = (LBound(SqlBuilders) + 1) To Length
         If TypeOf SqlBuilders(i) Is SqlBuilder Then
             TempSql = SqlBuilders(i).ToSqlString(0, False)
             SqlString = SqlString & " UNION All " & TempSql
@@ -720,5 +724,51 @@ Public Function UnionAll(ParamArray SqlBuilders() As Variant) As DAO.Recordset
 
 ErrorHandler:
     Call ShowError(Err)
+    Exit Function
+End Function
+
+' 创建临时表（克隆目标表的结构）（只能使用ADO，DAO不支持内存临时表）
+Public Function CreateTempTable(ByVal CloneTable As String) As ADODB.Recordset
+    On Error GoTo ErrorHandler
+    Dim source As ADODB.Recordset
+    Dim rs As ADODB.Recordset
+    Dim fieldDef As ADODB.Field
+
+    If Not DbSql.TableExists(CloneTable) Then
+        MsgBox "数据表不存在", vbCritical + vbOKOnly, "系统错误"
+        Set CreateTempTable = Nothing
+        Exit Function
+    End If
+
+    Set source = New ADODB.Recordset
+    source.Open CloneTable, Application.CurrentProject.AccessConnection, adOpenForwardOnly, adLockReadOnly
+
+    Set rs = New ADODB.Recordset
+    rs.CursorLocation = adUseClient
+
+    For Each fieldDef In source.Fields
+        rs.Fields.Append fieldDef.Name, fieldDef.Type, fieldDef.DefinedSize, 106
+        rs.Fields(fieldDef.Name).Precision = fieldDef.Precision
+        rs.Fields(fieldDef.Name).NumericScale = fieldDef.NumericScale
+    Next fieldDef
+
+    rs.Open
+    Set rs.ActiveConnection = Nothing
+    source.Close
+    Set source = Nothing
+    Set CreateTempTable = rs
+    Exit Function
+
+ErrorHandler:
+    MsgBox "创建临时表失败", vbCritical + vbOKOnly, "系统错误"
+    If Not source Is Nothing Then
+        If source.State = adStateOpen Then source.Close
+        Set source = Nothing
+    End If
+    If Not rs Is Nothing Then
+        If rs.State = adStateOpen Then rs.Close
+        Set rs = Nothing
+    End If
+    Set CreateTempTable = Nothing
     Exit Function
 End Function

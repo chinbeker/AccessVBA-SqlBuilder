@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 
 '@Lang VBA
 
-' ============================================================================
+'============================================================================
 ' Access VBA SQL Builder
 ' Repository: https://github.com/chinbeker/AccessVBA-SqlBuilder
 ' License: MIT
@@ -18,7 +18,46 @@ Attribute VB_Exposed = False
 ' Version: 1.0.0
 ' Created: 2026
 ' Description: Fluent SQL builder and database helper for Access VBA
-' ============================================================================
+'============================================================================
+
+'============================================================================
+'                         SQL DDL 数据类型关键字
+'----------------------------------------------------------------------------
+' TEXT | CHAR                 短文本（长度）              TEXT(50)
+' MEMO | LONGTEXT             长文本                      MEMO
+' BYTE                        字节型（0-255）             BYTE
+' INTEGER | SHORT             整型（-32768~32767）        INTEGER
+' LONG | INT                  长整型                      LONG
+' SINGLE | REAL               单精度浮点数                SINGLE
+' DOUBLE | FLOAT              双精度浮点数                DOUBLE
+' DECIMAL | NUMERIC           十进制数（精确小数）        DECIMAL(10,2)
+' CURRENCY | MONEY            货币                        CURRENCY
+' DATETIME | DATE             日期/时间                   DATETIME
+' YESNO | BIT | BOOLEAN       是/否                       YESNO
+' BINARY                      二进制（固定长度）          BINARY(50)
+' OLEOBJECT | LONGBINARY      OLE 对象（图片/文件）       OLEOBJECT
+' GUID                        全局唯一标识符              GUID
+'============================================================================
+
+'============================================================================
+'                          Access SQL 标准写法
+'----------------------------------------------------------------------------
+' TEXT(n)                     短文本                      TEXT(50)
+' MEMO                        长文本                      MEMO
+' BYTE                        字节型                      BYTE
+' INTEGER                     整型                        INTEGER
+' LONG                        长整型                      LONG
+' SINGLE                      单精度                      SINGLE
+' DOUBLE                      双精度                      DOUBLE
+' DECIMAL(p,s)                十进制                      DECIMAL(10,2)
+' CURRENCY                    货币                        CURRENCY
+' DATETIME                    日期/时间                   DATETIME
+' YESNO                       是/否                       YESNO
+' BINARY(n)                   二进制                      BINARY(50)
+' OLEOBJECT                   OLE 对象                    OLEOBJECT
+' GUID                        GUID                        GUID
+' AUTOINCREMENT               自动编号                    AUTOINCREMENT
+'============================================================================
 
 
 Option Compare Database
@@ -52,21 +91,9 @@ Private Function IsEmptyString(ByVal str As Variant) As Boolean
         IsEmptyString = True
     End If
 End Function
-' 判断空白字符串
-Private Function IsWhiteSpaceString(ByVal str As Variant) As Boolean
-    If VBA.VarType(str) = VBA.vbString Then
-        IsWhiteSpaceString = (VBA.Len(VBA.Trim(str)) = 0)
-    Else
-        IsWhiteSpaceString = True
-    End If
-End Function
 ' 错误消息
-Private Sub ShowError(ByRef ErrorObject As Object, Optional ByVal Message As String)
-    If Not IsMissing(Message) And Not IsEmptyString(Message) Then
-        MsgBox Message, vbCritical + vbOKOnly, "系统错误"
-    Else
-        MsgBox ErrorObject.Description, vbCritical + vbOKOnly, "系统错误"
-    End If
+Private Sub ShowError(ByRef ErrorObject As Object)
+    MsgBox "发生错误：                         " & vbCrLf & vbCrLf & ErrorObject.Description, vbCritical + vbOKOnly, "系统错误"
 End Sub
 ' 清空
 Private Sub ClearCollections()
@@ -244,16 +271,16 @@ Private Function ToSourceSqlString(Optional ByVal IsUpdate As Boolean = False) A
     If HasSource Then
         Dim SourceSqlString As String
         If Not JoinCollection Is Nothing Then
-            Dim length As Long
-            length = JoinCollection.Count
-            If length > 0 Then
-                If length = 1 Then
+            Dim Length As Long
+            Length = JoinCollection.Count
+            If Length > 0 Then
+                If Length = 1 Then
                     SourceSqlString = FromTableName & JoinCollection(1)
                 Else
                     SourceSqlString = "(" & FromTableName & JoinCollection(1) & ")"
                     Dim i As Long
-                    For i = 2 To length
-                        If i < length Then
+                    For i = 2 To Length
+                        If i < Length Then
                             SourceSqlString = "(" & SourceSqlString & JoinCollection(i) & ")"
                         Else
                             SourceSqlString = SourceSqlString & JoinCollection(i)
@@ -324,10 +351,10 @@ Private Function ToFieldSqlString(Optional ByVal IsUpdate As Boolean = False) As
         ElseIf Not FieldCollection Is Nothing Then
             If FieldCollection.Count > 0 Then
                 Dim i As Long
-                Dim length As Long
-                length = FieldCollection.Count
-                For i = 1 To length
-                    If i < length Then
+                Dim Length As Long
+                Length = FieldCollection.Count
+                For i = 1 To Length
+                    If i < Length Then
                         If IsUpdate = True And Validation Then
                             FieldSqlString = FieldSqlString & FieldCollection(i) & "=" & ValueCollection(i) & ", "
                         Else
@@ -355,11 +382,11 @@ Private Function ToValueSqlString(Optional ByVal IsUpdate As Boolean = False) As
     On Error GoTo ErrorHandler
     If Not ValueCollection Is Nothing And ValueCollection.Count > 0 Then
         Dim i As Long
-        Dim length As Long
+        Dim Length As Long
         Dim ValueSqlString As String
-        length = ValueCollection.Count
-        For i = 1 To length
-            If i < length Then
+        Length = ValueCollection.Count
+        For i = 1 To Length
+            If i < Length Then
                 ValueSqlString = ValueSqlString & ValueCollection(i) & ", "
             Else
                 ValueSqlString = ValueSqlString & ValueCollection(i)
@@ -409,17 +436,17 @@ Private Function ToWhereSqlString() As String
     If Not WhereCollection Is Nothing Then
         If WhereCollection.Count > 0 Then
             Dim i As Long
-            Dim length As Long
+            Dim Length As Long
             Dim WhereSqlString As String
-            length = WhereCollection.Count
-            For i = 1 To length
-                If i < length Then
+            Length = WhereCollection.Count
+            For i = 1 To Length
+                If i < Length Then
                     WhereSqlString = WhereSqlString & "(" & WhereCollection(i) & ") And "
                 Else
                     WhereSqlString = WhereSqlString & "(" & WhereCollection(i) & ")"
                 End If
             Next i
-            If length > 1 Then WhereSqlString = "(" & WhereSqlString & ")"
+            If Length > 1 Then WhereSqlString = "(" & WhereSqlString & ")"
             If Not IsEmptyString(WhereSqlString) Then WhereSqlString = " WHERE " & WhereSqlString
             ToWhereSqlString = WhereSqlString
         End If
@@ -483,9 +510,9 @@ Public Sub SetQueryDef(ByRef Def As DAO.QueryDef)
     On Error GoTo ErrorHandler
     If HasParam Then
         Dim i As Long
-        Dim length As Long
-        length = ParamDefCollection.Count
-        For i = 1 To length
+        Dim Length As Long
+        Length = ParamDefCollection.Count
+        For i = 1 To Length
             Def.Parameters(ParamDefCollection(i)) = ParamCollection(i)
         Next i
         Set ParamDefCollection = Nothing
@@ -504,11 +531,11 @@ Private Function ToParamDefSqlString() As String
         If Not ParamDefCollection Is Nothing Then
             If ParamDefCollection.Count > 0 Then
                 Dim i As Long
-                Dim length As Long
+                Dim Length As Long
                 Dim ParamDefSqlString As String
-                length = ParamDefCollection.Count
-                For i = 1 To length
-                    If i < length Then
+                Length = ParamDefCollection.Count
+                For i = 1 To Length
+                    If i < Length Then
                         ParamDefSqlString = ParamDefSqlString & "[" & ParamDefCollection(i) & "] " & ParamTypeCollection(i) & ", "
                     Else
                         ParamDefSqlString = ParamDefSqlString & "[" & ParamDefCollection(i) & "] " & ParamTypeCollection(i)
@@ -544,11 +571,11 @@ Private Function ToGroupSqlString() As String
     If Not GroupCollection Is Nothing Then
         If GroupCollection.Count > 0 Then
             Dim i As Long
-            Dim length As Long
+            Dim Length As Long
             Dim GroupSqlString As String
-            length = GroupCollection.Count
-            For i = 1 To length
-                If i < length Then
+            Length = GroupCollection.Count
+            For i = 1 To Length
+                If i < Length Then
                     GroupSqlString = GroupSqlString & GroupCollection(i) & ", "
                 Else
                     GroupSqlString = GroupSqlString & GroupCollection(i)
@@ -598,17 +625,17 @@ Private Function ToHavingSqlString() As String
     If Not HavingCollection Is Nothing Then
         If HavingCollection.Count > 0 Then
             Dim i As Long
-            Dim length As Long
+            Dim Length As Long
             Dim HavingSqlString As String
-            length = HavingCollection.Count
-            For i = 1 To length
-                If i < length Then
+            Length = HavingCollection.Count
+            For i = 1 To Length
+                If i < Length Then
                     HavingSqlString = HavingSqlString & "(" & HavingCollection(i) & ") And "
                 Else
                     HavingSqlString = HavingSqlString & "(" & HavingCollection(i) & ")"
                 End If
             Next i
-            If length > 1 Then HavingSqlString = "(" & HavingSqlString & ")"
+            If Length > 1 Then HavingSqlString = "(" & HavingSqlString & ")"
             If Not IsEmptyString(HavingSqlString) Then HavingSqlString = " HAVING " & HavingSqlString
             ToHavingSqlString = HavingSqlString
         End If
@@ -640,11 +667,11 @@ Private Function ToOrderSqlString() As String
     If Not OrderCollection Is Nothing Then
         If OrderCollection.Count > 0 Then
             Dim i As Long
-            Dim length As Long
+            Dim Length As Long
             Dim OrderSqlString As String
-            length = OrderCollection.Count
-            For i = 1 To length
-                If i < length Then
+            Length = OrderCollection.Count
+            For i = 1 To Length
+                If i < Length Then
                     OrderSqlString = OrderSqlString & OrderCollection(i) & ", "
                 Else
                     OrderSqlString = OrderSqlString & OrderCollection(i)
