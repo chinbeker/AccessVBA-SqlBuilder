@@ -710,7 +710,7 @@ Public Function ToSqlString(Optional ByVal Operation As Byte = 0, Optional ByVal
             End If
             If Validation Then
                 If HasSource Then
-                    SqlString = ToParamDefSqlString & "INSERT INTO " & IntoTableName & " (" & ToFieldSqlString & ") SELECT " & ToValueSqlString & ToSourceSqlString & EndSemicolon
+                    SqlString = ToParamDefSqlString & "INSERT INTO " & IntoTableName & " (" & ToFieldSqlString & ") SELECT " & ToValueSqlString & ToSourceSqlString & ToWhereSqlString  & EndSemicolon
                 Else
                     SqlString = ToParamDefSqlString & "INSERT INTO " & IntoTableName & " (" & ToFieldSqlString & ") VALUES (" & ToValueSqlString & ")" & EndSemicolon
                 End If
