@@ -17,7 +17,7 @@ Option Compare Database
 Option Explicit
 
 '数据库对象
-Private Database As DAO.Database
+Private CurrentDatabase As DAO.Database
 
 ' 判断空字符串
 Private Function IsEmptyString(ByVal str As Variant) As Boolean
@@ -35,7 +35,7 @@ End Sub
 ' 建立数据库连接
 Private Sub CreateConnection()
     On Error GoTo ErrorHandler
-    If Database Is Nothing Then Set Database = CurrentDb()
+    If CurrentDatabase Is Nothing Then Set CurrentDatabase = Application.CurrentDb
     Exit Sub
 
 ErrorHandler:
@@ -49,7 +49,7 @@ Public Function TableExists(ByVal TableName As String) As Boolean
     If Not StringBase.IsNullOrEmpty(TableName) Then
         Dim tdf As DAO.TableDef
         Call CreateConnection
-        Set tdf = Database.TableDefs(TableName)
+        Set tdf = CurrentDatabase.TableDefs(TableName)
         If Not tdf Is Nothing Then
             TableExists = (Left(tdf.Name, 4) <> "MSys")
             Set tdf = Nothing
@@ -79,7 +79,7 @@ Public Function SelectDynaset(ByVal SqlString As String) As DAO.Recordset
     On Error GoTo ErrorHandler
     If IsEmptyString(SqlString) Then Exit Function
     Call CreateConnection
-    Set SelectDynaset = Database.OpenRecordset(SqlString, dbOpenDynaset, dbSeeChanges)
+    Set SelectDynaset = CurrentDatabase.OpenRecordset(SqlString, dbOpenDynaset, dbSeeChanges)
     Exit Function
 ErrorHandler:
     Call ShowError(Err)
@@ -91,7 +91,7 @@ Public Function SelectSnapshot(ByVal SqlString As String) As DAO.Recordset
     On Error GoTo ErrorHandler
     If IsEmptyString(SqlString) Then Exit Function
     Call CreateConnection
-    Set SelectSnapshot = Database.OpenRecordset(SqlString, dbOpenSnapshot)
+    Set SelectSnapshot = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
     Exit Function
 ErrorHandler:
     Call ShowError(Err)
@@ -103,8 +103,8 @@ Public Function Execute(ByVal SqlString As String) As Long
     On Error GoTo ErrorHandler
     If IsEmptyString(SqlString) Then Exit Function
     Call CreateConnection
-    Database.Execute SqlString
-    Execute = Database.RecordsAffected
+    CurrentDatabase.Execute SqlString
+    Execute = CurrentDatabase.RecordsAffected
     Exit Function
 ErrorHandler:
     Call ShowError(Err)
@@ -115,7 +115,7 @@ Public Function TableDef(ByVal Name As String) As DAO.TableDef
     On Error GoTo ErrorHandler
     If IsEmptyString(Name) Then Exit Function
     Call CreateConnection
-    Set TableDef = Database.TableDefs(Name)
+    Set TableDef = CurrentDatabase.TableDefs(Name)
     Exit Function
 ErrorHandler:
     Call ShowError(Err)
@@ -127,7 +127,7 @@ Public Function OpenTable(ByVal Name As String) As DAO.Recordset
     On Error GoTo ErrorHandler
     If IsEmptyString(Name) Then Exit Function
     Call CreateConnection
-    Set OpenTable = Database.OpenRecordset(Name, dbOpenTable)
+    Set OpenTable = CurrentDatabase.OpenRecordset(Name, dbOpenTable)
     Exit Function
 ErrorHandler:
     Call ShowError(Err)
@@ -139,7 +139,7 @@ Public Function TableDynaset(ByVal Name As String) As DAO.Recordset
     On Error GoTo ErrorHandler
     If IsEmptyString(Name) Then Exit Function
     Call CreateConnection
-    Set TableDynaset = Database.OpenRecordset(Name, dbOpenDynaset, dbSeeChanges)
+    Set TableDynaset = CurrentDatabase.OpenRecordset(Name, dbOpenDynaset, dbSeeChanges)
     Exit Function
 ErrorHandler:
     Call ShowError(Err)
@@ -151,7 +151,7 @@ Public Function TableSnapshot(ByVal Name As String) As DAO.Recordset
     On Error GoTo ErrorHandler
     If IsEmptyString(Name) Then Exit Function
     Call CreateConnection
-    Set TableSnapshot = Database.OpenRecordset(Name, dbOpenSnapshot)
+    Set TableSnapshot = CurrentDatabase.OpenRecordset(Name, dbOpenSnapshot)
     Exit Function
 
 ErrorHandler:
@@ -169,7 +169,7 @@ Public Function Insert(ByVal TableName As String, ByRef Sql As SqlBuilder) As Lo
     Call CreateConnection
     If Sql.HasParam Then
         Dim Def As DAO.QueryDef
-        Set Def = Database.CreateQueryDef("", SqlString)
+        Set Def = CurrentDatabase.CreateQueryDef("", SqlString)
         Sql.SetQueryDef Def
         Set Sql = Nothing
         Def.Execute dbFailOnError
@@ -178,8 +178,8 @@ Public Function Insert(ByVal TableName As String, ByRef Sql As SqlBuilder) As Lo
         Set Def = Nothing
     Else
         Set Sql = Nothing
-        Database.Execute SqlString
-        Insert = Database.RecordsAffected
+        CurrentDatabase.Execute SqlString
+        Insert = CurrentDatabase.RecordsAffected
     End If
     Exit Function
 
@@ -198,7 +198,7 @@ Public Function Update(ByVal TableName As String, ByRef Sql As SqlBuilder) As Lo
     Call CreateConnection
     If Sql.HasParam Then
         Dim Def As DAO.QueryDef
-        Set Def = Database.CreateQueryDef("", SqlString)
+        Set Def = CurrentDatabase.CreateQueryDef("", SqlString)
         Sql.SetQueryDef Def
         Set Sql = Nothing
         Def.Execute dbFailOnError
@@ -207,8 +207,8 @@ Public Function Update(ByVal TableName As String, ByRef Sql As SqlBuilder) As Lo
         Set Def = Nothing
     Else
         Set Sql = Nothing
-        Database.Execute SqlString
-        Update = Database.RecordsAffected
+        CurrentDatabase.Execute SqlString
+        Update = CurrentDatabase.RecordsAffected
     End If
     Exit Function
 
@@ -227,7 +227,7 @@ Public Function Delete(ByVal TableName As String, ByRef Sql As SqlBuilder) As Lo
     Call CreateConnection
     If Sql.HasParam Then
         Dim Def As DAO.QueryDef
-        Set Def = Database.CreateQueryDef("", SqlString)
+        Set Def = CurrentDatabase.CreateQueryDef("", SqlString)
         Sql.SetQueryDef Def
         Set Sql = Nothing
         Def.Execute dbFailOnError
@@ -236,8 +236,8 @@ Public Function Delete(ByVal TableName As String, ByRef Sql As SqlBuilder) As Lo
         Set Def = Nothing
     Else
         Set Sql = Nothing
-        Database.Execute SqlString
-        Delete = Database.RecordsAffected
+        CurrentDatabase.Execute SqlString
+        Delete = CurrentDatabase.RecordsAffected
     End If
     Exit Function
 
@@ -251,8 +251,8 @@ Public Function Clear(ByVal TableName As String) As Long
     On Error GoTo ErrorHandler
     If IsEmptyString(TableName) Then Exit Function
     Call CreateConnection
-    Database.Execute "DELETE FROM " & TableName
-    Clear = Database.RecordsAffected
+    CurrentDatabase.Execute "DELETE FROM " & TableName
+    Clear = CurrentDatabase.RecordsAffected
     Exit Function
 ErrorHandler:
     Call ShowError(Err)
@@ -268,13 +268,13 @@ Public Function Count(ByRef Sql As SqlBuilder) As Long
     Dim rs As DAO.Recordset
     If Sql.HasParam Then
         Dim Def As DAO.QueryDef
-        Set Def = Database.CreateQueryDef("", SqlString)
+        Set Def = CurrentDatabase.CreateQueryDef("", SqlString)
         Sql.SetQueryDef Def
         Set rs = Def.OpenRecordset(dbOpenSnapshot)
         Def.Close
         Set Def = Nothing
     Else
-        Set rs = Database.OpenRecordset(SqlString, dbOpenSnapshot)
+        Set rs = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
     End If
     Set Sql = Nothing
     Count = rs(0)
@@ -307,7 +307,7 @@ Public Function Find(ByRef Sql As SqlBuilder) As DAO.Recordset
     Call CreateConnection
     If Sql.HasParam Then
         Dim Def As DAO.QueryDef
-        Set Def = Database.CreateQueryDef("", SqlString)
+        Set Def = CurrentDatabase.CreateQueryDef("", SqlString)
         Sql.SetQueryDef Def
         Set Sql = Nothing
         Set Find = Def.OpenRecordset(dbOpenSnapshot)
@@ -315,7 +315,7 @@ Public Function Find(ByRef Sql As SqlBuilder) As DAO.Recordset
         Set Def = Nothing
     Else
         Set Sql = Nothing
-        Set Find = Database.OpenRecordset(SqlString, dbOpenSnapshot)
+        Set Find = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
     End If
     Exit Function
 
@@ -332,7 +332,7 @@ Public Function Record(ByRef Sql As SqlBuilder) As DAO.Recordset
     Call CreateConnection
     If Sql.HasParam Then
         Dim Def As DAO.QueryDef
-        Set Def = Database.CreateQueryDef("", SqlString)
+        Set Def = CurrentDatabase.CreateQueryDef("", SqlString)
         Sql.SetQueryDef Def
         Set Sql = Nothing
         Set Record = Def.OpenRecordset(dbOpenDynaset, dbSeeChanges)
@@ -340,7 +340,7 @@ Public Function Record(ByRef Sql As SqlBuilder) As DAO.Recordset
         Set Def = Nothing
     Else
         Set Sql = Nothing
-        Set Record = Database.OpenRecordset(SqlString, dbOpenDynaset, dbSeeChanges)
+        Set Record = CurrentDatabase.OpenRecordset(SqlString, dbOpenDynaset, dbSeeChanges)
     End If
     Exit Function
 
@@ -358,7 +358,7 @@ Public Function First(ByRef Sql As SqlBuilder) As DAO.Recordset
     Call CreateConnection
     If Sql.HasParam Then
         Dim Def As DAO.QueryDef
-        Set Def = Database.CreateQueryDef("", SqlString)
+        Set Def = CurrentDatabase.CreateQueryDef("", SqlString)
         Sql.SetQueryDef Def
         Set Sql = Nothing
         Set First = Def.OpenRecordset(dbOpenSnapshot)
@@ -366,7 +366,7 @@ Public Function First(ByRef Sql As SqlBuilder) As DAO.Recordset
         Set Def = Nothing
     Else
         Set Sql = Nothing
-        Set First = Database.OpenRecordset(SqlString, dbOpenSnapshot)
+        Set First = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
     End If
     Exit Function
 
@@ -384,7 +384,7 @@ Public Function FirstRecord(ByRef Sql As SqlBuilder) As DAO.Recordset
     Call CreateConnection
     If Sql.HasParam Then
         Dim Def As DAO.QueryDef
-        Set Def = Database.CreateQueryDef("", SqlString)
+        Set Def = CurrentDatabase.CreateQueryDef("", SqlString)
         Sql.SetQueryDef Def
         Set Sql = Nothing
         Set FirstRecord = Def.OpenRecordset(dbOpenDynaset, dbSeeChanges)
@@ -392,7 +392,7 @@ Public Function FirstRecord(ByRef Sql As SqlBuilder) As DAO.Recordset
         Set Def = Nothing
     Else
         Set Sql = Nothing
-        Set FirstRecord = Database.OpenRecordset(SqlString, dbOpenDynaset, dbSeeChanges)
+        Set FirstRecord = CurrentDatabase.OpenRecordset(SqlString, dbOpenDynaset, dbSeeChanges)
     End If
     Exit Function
 
@@ -481,7 +481,7 @@ Public Function GetValue(ByRef Sql As SqlBuilder) As Variant
     Dim rs As DAO.Recordset
     If Sql.HasParam Then
         Dim Def As DAO.QueryDef
-        Set Def = Database.CreateQueryDef("", SqlString)
+        Set Def = CurrentDatabase.CreateQueryDef("", SqlString)
         Sql.SetQueryDef Def
         Set Sql = Nothing
         Set rs = Def.OpenRecordset(dbOpenSnapshot)
@@ -489,7 +489,7 @@ Public Function GetValue(ByRef Sql As SqlBuilder) As Variant
         Set Def = Nothing
     Else
         Set Sql = Nothing
-        Set rs = Database.OpenRecordset(SqlString, dbOpenSnapshot)
+        Set rs = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
     End If
     If Not rs.EOF Then
         GetValue = rs(0)
@@ -512,7 +512,7 @@ Public Function GetValueFromSql(ByVal SqlString As String) As Variant
 
     Call CreateConnection
     Dim rs As DAO.Recordset
-    Set rs = Database.OpenRecordset(SqlString, dbOpenSnapshot)
+    Set rs = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
 
     If Not rs.EOF Then
         GetValueFromSql = rs(0)
@@ -617,7 +617,7 @@ Public Function SetValue(ByVal TableName As String, ByVal Field As String, ByVal
     Dim Affected As Long
     If Sql.HasParam Then
         Dim Def As DAO.QueryDef
-        Set Def = Database.CreateQueryDef("", SqlString)
+        Set Def = CurrentDatabase.CreateQueryDef("", SqlString)
         Sql.SetQueryDef Def
         Set Sql = Nothing
         Def.Execute dbFailOnError
@@ -626,8 +626,8 @@ Public Function SetValue(ByVal TableName As String, ByVal Field As String, ByVal
         Set Def = Nothing
     Else
         Set Sql = Nothing
-        Database.Execute SqlString
-        Affected = Database.RecordsAffected
+        CurrentDatabase.Execute SqlString
+        Affected = CurrentDatabase.RecordsAffected
     End If
     If Affected > 0 Then
         SetValue = True
@@ -673,7 +673,7 @@ Public Function Union(ParamArray SqlBuilders() As Variant) As DAO.Recordset
     If VBA.Len(SqlString) > 0 Then
         SqlString = SqlString & ";"
         Call CreateConnection
-        Set Union = Database.OpenRecordset(SqlString, dbOpenSnapshot)
+        Set Union = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
     Else
         MsgBox "SQL 语法错误", vbCritical + vbOKOnly, "系统错误"
     End If
@@ -716,7 +716,7 @@ Public Function UnionAll(ParamArray SqlBuilders() As Variant) As DAO.Recordset
     If VBA.Len(SqlString) > 0 Then
         SqlString = SqlString & ";"
         Call CreateConnection
-        Set UnionAll = Database.OpenRecordset(SqlString, dbOpenSnapshot)
+        Set UnionAll = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
     Else
         MsgBox "SQL 语法错误", vbCritical + vbOKOnly, "系统错误"
     End If
