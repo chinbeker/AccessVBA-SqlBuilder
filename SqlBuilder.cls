@@ -63,7 +63,6 @@ Attribute VB_Exposed = False
 Option Compare Database
 Option Explicit
 
-
 Private TopSqlString As String
 Private SelectAllField As Boolean
 Private IsDerivedTable As Boolean
@@ -314,28 +313,65 @@ Public Sub Field(ByVal FieldName As String, Optional ByVal value As Variant, Opt
     On Error GoTo ErrorHandler
     If IsEmptyString(FieldName) Then Exit Sub
     If FieldCollection Is Nothing Then Set FieldCollection = New Collection
-    If Not IsMissing(Alias) And Not IsEmptyString(Alias) Then
+    If Not VBA.IsMissing(Alias) And Not IsEmptyString(Alias) Then
         FieldCollection.Add FieldName & " AS " & Alias
     Else
         FieldCollection.Add FieldName
     End If
-    If Not IsMissing(value) Then
+    If Not VBA.IsMissing(value) Then
         If ValueCollection Is Nothing Then Set ValueCollection = New Collection
         Select Case VBA.VarType(value)
             Case VBA.vbString
-                If Left(value, 4) = "[$$]" Then
-                    ValueCollection.Add Mid(value, 5)
+                If VBA.Left(value, 4) = "[$$]" Then
+                    ValueCollection.Add VBA.Mid(value, 5)
                 Else
-                    ValueCollection.Add "'" & Replace(value, "'", "''") & "'"
+                    ValueCollection.Add "'" & VBA.Replace(value, "'", "''") & "'"
                 End If
             Case VBA.vbDate
-                ValueCollection.Add "#" & Format(value, "yyyy-mm-dd") & "#"
+                ValueCollection.Add "#" & VBA.Format(value, "yyyy-mm-dd") & "#"
             Case VBA.vbNull
                 ValueCollection.Add "NULL"
             Case Else
                 ValueCollection.Add value
         End Select
     End If
+    Exit Sub
+ErrorHandler:
+    Call ShowError(Err)
+    Exit Sub
+End Sub
+
+'常量列
+Public Sub Constant(ByVal Alias As String, ByVal value As Variant)
+    On Error GoTo ErrorHandler
+    If IsEmptyString(Alias) Then Exit Sub
+    If VBA.IsEmpty(value) Then Exit Sub
+    If FieldCollection Is Nothing Then Set FieldCollection = New Collection
+    Dim FieldName As String
+    Select Case VBA.VarType(value)
+        Case VBA.vbString
+            FieldName = "'" & VBA.Replace(value, "'", "''") & "'"
+        Case VBA.vbDate
+            FieldName = "#" & VBA.Format(value, "yyyy-mm-dd") & "#"
+        Case VBA.vbNull
+            FieldName = "NULL"
+        Case Else
+            FieldName = VBA.CStr(value)
+    End Select
+    FieldCollection.Add FieldName & " AS " & Alias
+    Exit Sub
+ErrorHandler:
+    Call ShowError(Err)
+    Exit Sub
+End Sub
+
+'计算列
+Public Sub Computed(ByVal Alias As String, ByVal Expression As String)
+    On Error GoTo ErrorHandler
+    If IsEmptyString(Alias) Then Exit Sub
+    If IsEmptyString(Expression) Then Exit Sub
+    If FieldCollection Is Nothing Then Set FieldCollection = New Collection
+    FieldCollection.Add Expression & " AS " & Alias
     Exit Sub
 ErrorHandler:
     Call ShowError(Err)
@@ -407,7 +443,7 @@ Public Sub Where(ByVal Condition As String, Optional ByVal value As Variant)
     On Error GoTo ErrorHandler
     If IsEmptyString(Condition) Then Exit Sub
     If WhereCollection Is Nothing Then Set WhereCollection = New Collection
-    If Not IsMissing(value) Then
+    If Not VBA.IsMissing(value) Then
         Select Case VBA.VarType(value)
             Case VBA.vbString
                 If Left(value, 4) = "[$$]" Then
@@ -596,7 +632,7 @@ Public Sub Having(ByVal Condition As String, Optional ByVal value As Variant)
     On Error GoTo ErrorHandler
     If IsEmptyString(Condition) Then Exit Sub
     If HavingCollection Is Nothing Then Set HavingCollection = New Collection
-    If Not IsMissing(value) Then
+    If Not VBA.IsMissing(value) Then
         Select Case VBA.VarType(value)
             Case VBA.vbString
                 If Left(value, 4) = "[$$]" Then
@@ -710,7 +746,7 @@ Public Function ToSqlString(Optional ByVal Operation As Byte = 0, Optional ByVal
             End If
             If Validation Then
                 If HasSource Then
-                    SqlString = ToParamDefSqlString & "INSERT INTO " & IntoTableName & " (" & ToFieldSqlString & ") SELECT " & ToValueSqlString & ToSourceSqlString & ToWhereSqlString  & EndSemicolon
+                    SqlString = ToParamDefSqlString & "INSERT INTO " & IntoTableName & " (" & ToFieldSqlString & ") SELECT " & ToValueSqlString & ToSourceSqlString & ToWhereSqlString & EndSemicolon
                 Else
                     SqlString = ToParamDefSqlString & "INSERT INTO " & IntoTableName & " (" & ToFieldSqlString & ") VALUES (" & ToValueSqlString & ")" & EndSemicolon
                 End If
@@ -761,7 +797,7 @@ Public Function ToSqlString(Optional ByVal Operation As Byte = 0, Optional ByVal
         End If
     End If
 
-    'MsgBox SqlString
+    MsgBox SqlString
     If VBA.Len(SqlString) > 0 Then
         ToSqlString = SqlString
         Call ClearCollections
