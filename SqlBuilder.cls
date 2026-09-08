@@ -797,7 +797,7 @@ Public Function ToSqlString(Optional ByVal Operation As Byte = 0, Optional ByVal
         End If
     End If
 
-    MsgBox SqlString
+    'MsgBox SqlString
     If VBA.Len(SqlString) > 0 Then
         ToSqlString = SqlString
         Call ClearCollections
