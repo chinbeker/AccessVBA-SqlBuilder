@@ -122,6 +122,8 @@ ErrorHandler:
     Err.Raise Err.Number, "DbSql.Execute" & vbCrLf & Err.Source, Err.Description
     Exit Function
 End Function
+
+
 ' 获取表定义
 Public Function TableDef(ByVal TableName As String) As DAO.TableDef
     On Error GoTo ErrorHandler
@@ -173,6 +175,143 @@ ErrorHandler:
     Err.Raise Err.Number, "DbSql.TableSnapshot" & vbCrLf & Err.Source, Err.Description
     Exit Function
 End Function
+
+' 指定表格查找记录（快照）
+Public Function TableFind(ByVal TableName As String, ByVal Condition As String) As DAO.Recordset
+    On Error GoTo ErrorHandler
+    If IsEmptyString(TableName) Then Exit Function
+    If IsEmptyString(Condition) Then Exit Function
+    Dim SqlString As String
+    SqlString = "SELECT " & TableName & ".* FROM " & TableName & " WHERE (" & Condition & ")"
+    Call ConnectDatabase
+    Set TableFind = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
+    Exit Function
+
+ErrorHandler:
+    Err.Raise Err.Number, "DbSql.TableFind" & vbCrLf & Err.Source, Err.Description
+    Exit Function
+End Function
+
+' 指定表格查找记录（动态集）
+Public Function TableFindRecord(ByVal TableName As String, ByVal Condition As String) As DAO.Recordset
+    On Error GoTo ErrorHandler
+    If IsEmptyString(TableName) Then Exit Function
+    If IsEmptyString(Condition) Then Exit Function
+    Dim SqlString As String
+    SqlString = "SELECT " & TableName & ".* FROM " & TableName & " WHERE (" & Condition & ")"
+    Call ConnectDatabase
+    Set TableFindRecord = CurrentDatabase.OpenRecordset(SqlString, dbOpenDynaset, dbSeeChanges)
+    Exit Function
+
+ErrorHandler:
+    Err.Raise Err.Number, "DbSql.TableFindRecord" & vbCrLf & Err.Source, Err.Description
+    Exit Function
+End Function
+
+
+' 指定表格查找第一条记录（快照）
+Public Function TableFindFirst(ByVal TableName As String, ByVal Condition As String, Optional ByVal OrderBy As String) As DAO.Recordset
+    On Error GoTo ErrorHandler
+    If IsEmptyString(TableName) Then Exit Function
+    If IsEmptyString(Condition) Then Exit Function
+    Dim SqlString As String
+    SqlString = "SELECT TOP 1 " & TableName & ".* FROM " & TableName & " WHERE (" & Condition & ")"
+    If Not VBA.IsMissing(OrderBy) And Not IsEmptyString(OrderBy) Then SqlString = SqlString & " ORDER BY " & OrderBy
+    Call ConnectDatabase
+    Set TableFindFirst = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
+    Exit Function
+
+ErrorHandler:
+    Err.Raise Err.Number, "DbSql.TableFindFirst" & vbCrLf & Err.Source, Err.Description
+    Exit Function
+End Function
+
+' 指定表格查找第一条记录（动态集）
+Public Function TableFindFirstRecord(ByVal TableName As String, ByVal Condition As String, Optional ByVal OrderBy As String) As DAO.Recordset
+    On Error GoTo ErrorHandler
+    If IsEmptyString(TableName) Then Exit Function
+    If IsEmptyString(Condition) Then Exit Function
+    Dim SqlString As String
+    SqlString = "SELECT TOP 1 " & TableName & ".* FROM " & TableName & " WHERE (" & Condition & ")"
+    If Not VBA.IsMissing(OrderBy) And Not IsEmptyString(OrderBy) Then SqlString = SqlString & " ORDER BY " & OrderBy
+    Call ConnectDatabase
+    Set TableFindFirstRecord = CurrentDatabase.OpenRecordset(SqlString, dbOpenDynaset, dbSeeChanges)
+    Exit Function
+
+ErrorHandler:
+    Err.Raise Err.Number, "DbSql.TableFindFirstRecord" & vbCrLf & Err.Source, Err.Description
+    Exit Function
+End Function
+
+' 表格第一条记录（快照）
+Public Function TableFirst(ByVal TableName As String, Optional ByVal OrderBy As String) As DAO.Recordset
+    On Error GoTo ErrorHandler
+    If IsEmptyString(TableName) Then Exit Function
+    Dim SqlString As String
+    SqlString = "SELECT TOP 1 " & TableName & ".* FROM " & TableName
+    If Not VBA.IsMissing(OrderBy) And Not IsEmptyString(OrderBy) Then SqlString = SqlString & " ORDER BY " & OrderBy
+    Call ConnectDatabase
+    Set TableFirst = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
+    Exit Function
+
+ErrorHandler:
+    Err.Raise Err.Number, "DbSql.TableFirst" & vbCrLf & Err.Source, Err.Description
+    Exit Function
+End Function
+
+' 表格第一条记录（动态集）
+Public Function TableFirstRecord(ByVal TableName As String, Optional ByVal OrderBy As String) As DAO.Recordset
+    On Error GoTo ErrorHandler
+    If IsEmptyString(TableName) Then Exit Function
+    Dim SqlString As String
+    SqlString = "SELECT TOP 1 " & TableName & ".* FROM " & TableName
+    If Not VBA.IsMissing(OrderBy) And Not IsEmptyString(OrderBy) Then SqlString = SqlString & " ORDER BY " & OrderBy
+    Call ConnectDatabase
+    Set TableFirstRecord = CurrentDatabase.OpenRecordset(SqlString, dbOpenDynaset, dbSeeChanges)
+    Exit Function
+
+ErrorHandler:
+    Err.Raise Err.Number, "DbSql.TableFirstRecord" & vbCrLf & Err.Source, Err.Description
+    Exit Function
+End Function
+
+' 表格最后一条记录（快照）
+Public Function TableLast(ByVal TableName As String, ByVal OrderByField As String) As DAO.Recordset
+    On Error GoTo ErrorHandler
+    If IsEmptyString(TableName) Then Exit Function
+    If IsEmptyString(OrderByField) Then
+        MsgBox "排序字段不能为空", vbCritical + vbOKOnly, "系统错误"
+    End If
+    Dim SqlString As String
+    SqlString = "SELECT TOP 1 " & TableName & ".* FROM " & TableName & " ORDER BY " & OrderByField & " DESC"
+    Call ConnectDatabase
+    Set TableLast = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
+    Exit Function
+
+ErrorHandler:
+    Err.Raise Err.Number, "DbSql.TableLast" & vbCrLf & Err.Source, Err.Description
+    Exit Function
+End Function
+
+' 表格最后一条记录（动态集）
+Public Function TableLastRecord(ByVal TableName As String, ByVal OrderByField As String) As DAO.Recordset
+    On Error GoTo ErrorHandler
+    If IsEmptyString(TableName) Then Exit Function
+    If IsEmptyString(OrderByField) Then
+        MsgBox "排序字段不能为空", vbCritical + vbOKOnly, "系统错误"
+    End If
+    Dim SqlString As String
+    SqlString = "SELECT TOP 1 " & TableName & ".* FROM " & TableName & " ORDER BY " & OrderByField & " DESC"
+    Call ConnectDatabase
+    Set TableLastRecord = CurrentDatabase.OpenRecordset(SqlString, dbOpenDynaset, dbSeeChanges)
+    Exit Function
+
+ErrorHandler:
+    Err.Raise Err.Number, "DbSql.TableLastRecord" & vbCrLf & Err.Source, Err.Description
+    Exit Function
+End Function
+
+
 
 ' 插入数据
 Public Function Insert(ByVal TableName As String, ByRef Sql As SqlBuilder) As Long
@@ -424,142 +563,6 @@ ErrorHandler:
 End Function
 
 
-' 指定表格查找记录（快照）
-Public Function TableFind(ByVal TableName As String, ByVal Condition As String) As DAO.Recordset
-    On Error GoTo ErrorHandler
-    If IsEmptyString(TableName) Then Exit Function
-    If IsEmptyString(Condition) Then Exit Function
-    Dim SqlString As String
-    SqlString = "SELECT " & TableName & ".* FROM " & TableName & " WHERE (" & Condition & ")"
-    Call ConnectDatabase
-    Set TableFind = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
-    Exit Function
-
-ErrorHandler:
-    Err.Raise Err.Number, "DbSql.TableFind" & vbCrLf & Err.Source, Err.Description
-    Exit Function
-End Function
-
-' 指定表格查找记录（动态集）
-Public Function TableFindRecord(ByVal TableName As String, ByVal Condition As String) As DAO.Recordset
-    On Error GoTo ErrorHandler
-    If IsEmptyString(TableName) Then Exit Function
-    If IsEmptyString(Condition) Then Exit Function
-    Dim SqlString As String
-    SqlString = "SELECT " & TableName & ".* FROM " & TableName & " WHERE (" & Condition & ")"
-    Call ConnectDatabase
-    Set TableFindRecord = CurrentDatabase.OpenRecordset(SqlString, dbOpenDynaset, dbSeeChanges)
-    Exit Function
-
-ErrorHandler:
-    Err.Raise Err.Number, "DbSql.TableFindRecord" & vbCrLf & Err.Source, Err.Description
-    Exit Function
-End Function
-
-
-' 指定表格查找第一条记录（快照）
-Public Function TableFindFirst(ByVal TableName As String, ByVal Condition As String, Optional ByVal OrderBy As String) As DAO.Recordset
-    On Error GoTo ErrorHandler
-    If IsEmptyString(TableName) Then Exit Function
-    If IsEmptyString(Condition) Then Exit Function
-    Dim SqlString As String
-    SqlString = "SELECT TOP 1 " & TableName & ".* FROM " & TableName & " WHERE (" & Condition & ")"
-    If Not VBA.IsMissing(OrderBy) And Not IsEmptyString(OrderBy) Then SqlString = SqlString & " ORDER BY " & OrderBy
-    Call ConnectDatabase
-    Set TableFindFirst = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
-    Exit Function
-
-ErrorHandler:
-    Err.Raise Err.Number, "DbSql.TableFindFirst" & vbCrLf & Err.Source, Err.Description
-    Exit Function
-End Function
-
-' 指定表格查找第一条记录（动态集）
-Public Function TableFindFirstRecord(ByVal TableName As String, ByVal Condition As String, Optional ByVal OrderBy As String) As DAO.Recordset
-    On Error GoTo ErrorHandler
-    If IsEmptyString(TableName) Then Exit Function
-    If IsEmptyString(Condition) Then Exit Function
-    Dim SqlString As String
-    SqlString = "SELECT TOP 1 " & TableName & ".* FROM " & TableName & " WHERE (" & Condition & ")"
-    If Not VBA.IsMissing(OrderBy) And Not IsEmptyString(OrderBy) Then SqlString = SqlString & " ORDER BY " & OrderBy
-    Call ConnectDatabase
-    Set TableFindFirstRecord = CurrentDatabase.OpenRecordset(SqlString, dbOpenDynaset, dbSeeChanges)
-    Exit Function
-
-ErrorHandler:
-    Err.Raise Err.Number, "DbSql.TableFindFirstRecord" & vbCrLf & Err.Source, Err.Description
-    Exit Function
-End Function
-
-' 表格第一条记录（快照）
-Public Function TableFirst(ByVal TableName As String, Optional ByVal OrderBy As String) As DAO.Recordset
-    On Error GoTo ErrorHandler
-    If IsEmptyString(TableName) Then Exit Function
-    Dim SqlString As String
-    SqlString = "SELECT TOP 1 " & TableName & ".* FROM " & TableName
-    If Not VBA.IsMissing(OrderBy) And Not IsEmptyString(OrderBy) Then SqlString = SqlString & " ORDER BY " & OrderBy
-    Call ConnectDatabase
-    Set TableFirst = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
-    Exit Function
-
-ErrorHandler:
-    Err.Raise Err.Number, "DbSql.TableFirst" & vbCrLf & Err.Source, Err.Description
-    Exit Function
-End Function
-
-' 表格第一条记录（动态集）
-Public Function TableFirstRecord(ByVal TableName As String, Optional ByVal OrderBy As String) As DAO.Recordset
-    On Error GoTo ErrorHandler
-    If IsEmptyString(TableName) Then Exit Function
-    Dim SqlString As String
-    SqlString = "SELECT TOP 1 " & TableName & ".* FROM " & TableName
-    If Not VBA.IsMissing(OrderBy) And Not IsEmptyString(OrderBy) Then SqlString = SqlString & " ORDER BY " & OrderBy
-    Call ConnectDatabase
-    Set TableFirstRecord = CurrentDatabase.OpenRecordset(SqlString, dbOpenDynaset, dbSeeChanges)
-    Exit Function
-
-ErrorHandler:
-    Err.Raise Err.Number, "DbSql.TableFirstRecord" & vbCrLf & Err.Source, Err.Description
-    Exit Function
-End Function
-
-' 表格最后一条记录（快照）
-Public Function TableLast(ByVal TableName As String, ByVal OrderByField As String) As DAO.Recordset
-    On Error GoTo ErrorHandler
-    If IsEmptyString(TableName) Then Exit Function
-    If IsEmptyString(OrderByField) Then
-        MsgBox "排序字段不能为空", vbCritical + vbOKOnly, "系统错误"
-    End If
-    Dim SqlString As String
-    SqlString = "SELECT TOP 1 " & TableName & ".* FROM " & TableName & " ORDER BY " & OrderByField & " DESC"
-    Call ConnectDatabase
-    Set TableLast = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
-    Exit Function
-
-ErrorHandler:
-    Err.Raise Err.Number, "DbSql.TableLast" & vbCrLf & Err.Source, Err.Description
-    Exit Function
-End Function
-
-' 表格最后一条记录（动态集）
-Public Function TableLastRecord(ByVal TableName As String, ByVal OrderByField As String) As DAO.Recordset
-    On Error GoTo ErrorHandler
-    If IsEmptyString(TableName) Then Exit Function
-    If IsEmptyString(OrderByField) Then
-        MsgBox "排序字段不能为空", vbCritical + vbOKOnly, "系统错误"
-    End If
-    Dim SqlString As String
-    SqlString = "SELECT TOP 1 " & TableName & ".* FROM " & TableName & " ORDER BY " & OrderByField & " DESC"
-    Call ConnectDatabase
-    Set TableLastRecord = CurrentDatabase.OpenRecordset(SqlString, dbOpenDynaset, dbSeeChanges)
-    Exit Function
-
-ErrorHandler:
-    Err.Raise Err.Number, "DbSql.TableLastRecord" & vbCrLf & Err.Source, Err.Description
-    Exit Function
-End Function
-
-
 ' 获取第一条记录的指定字段值
 Public Function GetValue(ByRef Sql As SqlBuilder) As Variant
     On Error GoTo ErrorHandler
@@ -684,14 +687,15 @@ ErrorHandler:
     Exit Function
 End Function
 
+
+
 ' 联合查询（去重）
 Public Function Union(ParamArray SqlBuilders() As Variant) As DAO.Recordset
-    On Error GoTo ErrorHandler
     Dim Length As Long
     Length = UBound(SqlBuilders) - LBound(SqlBuilders) + 1
 
     If Length < 2 Then
-        MsgBox "至少需要两个查询进行 Union", vbCritical + vbOKOnly, "系统错误"
+        Err.Raise 3075, "DbSql.Union", "至少需要两个查询进行 Union"
         Exit Function
     End If
 
@@ -708,7 +712,7 @@ Public Function Union(ParamArray SqlBuilders() As Variant) As DAO.Recordset
             TempSql = SqlBuilders(i).ToSqlString(0, False)
             SqlString = SqlString & " UNION " & TempSql
         Else
-            MsgBox "参数必须是 SqlBuilder 对象类型", vbCritical + vbOKOnly, "系统错误"
+            Err.Raise 3001, "DbSql.Union", "参数必须是 SqlBuilder 对象类型"
             Exit Function
         End If
     Next i
@@ -718,23 +722,17 @@ Public Function Union(ParamArray SqlBuilders() As Variant) As DAO.Recordset
         Call ConnectDatabase
         Set Union = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
     Else
-        MsgBox "SQL 语法错误", vbCritical + vbOKOnly, "系统错误"
+        Err.Raise 3075, "DbSql.Union", "UNION 语句语法错误"
     End If
-    Exit Function
-
-ErrorHandler:
-    Err.Raise Err.Number, "DbSql.Union" & vbCrLf & Err.Source, Err.Description
-    Exit Function
 End Function
 
 ' 联合查询（有重复）
 Public Function UnionAll(ParamArray SqlBuilders() As Variant) As DAO.Recordset
-    On Error GoTo ErrorHandler
     Dim Length As Long
     Length = UBound(SqlBuilders) - LBound(SqlBuilders) + 1
 
     If Length < 2 Then
-        MsgBox "至少需要两个查询进行 Union", vbCritical + vbOKOnly, "系统错误"
+        Err.Raise 3075, "DbSql.UnionAll", "至少需要两个查询进行 Union"
         Exit Function
     End If
 
@@ -751,7 +749,7 @@ Public Function UnionAll(ParamArray SqlBuilders() As Variant) As DAO.Recordset
             TempSql = SqlBuilders(i).ToSqlString(0, False)
             SqlString = SqlString & " UNION All " & TempSql
         Else
-            MsgBox "参数必须是 SqlBuilder 对象类型", vbCritical + vbOKOnly, "系统错误"
+            Err.Raise 3001, "DbSql.UnionAll", "参数必须是 SqlBuilder 对象类型"
             Exit Function
         End If
     Next i
@@ -761,11 +759,6 @@ Public Function UnionAll(ParamArray SqlBuilders() As Variant) As DAO.Recordset
         Call ConnectDatabase
         Set UnionAll = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
     Else
-        MsgBox "SQL 语法错误", vbCritical + vbOKOnly, "系统错误"
+        Err.Raise 3075, "DbSql.Union", "UNION All 语句语法错误"
     End If
-    Exit Function
-
-ErrorHandler:
-    Err.Raise Err.Number, "DbSql.UnionAll" & vbCrLf & Err.Source, Err.Description
-    Exit Function
 End Function
