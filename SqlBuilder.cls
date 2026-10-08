@@ -20,45 +20,6 @@ Attribute VB_Exposed = False
 ' Description: Fluent SQL builder and database helper for Access VBA
 '============================================================================
 
-'============================================================================
-'                         SQL DDL 数据类型关键字
-'----------------------------------------------------------------------------
-' TEXT | CHAR                 短文本（长度）              TEXT(50)
-' MEMO | LONGTEXT             长文本                      MEMO
-' BYTE                        字节型（0-255）             BYTE
-' INTEGER | SHORT             整型（-32768~32767）        INTEGER
-' LONG | INT                  长整型                      LONG
-' SINGLE | REAL               单精度浮点数                SINGLE
-' DOUBLE | FLOAT              双精度浮点数                DOUBLE
-' DECIMAL | NUMERIC           十进制数（精确小数）        DECIMAL(10,2)
-' CURRENCY | MONEY            货币                        CURRENCY
-' DATETIME | DATE             日期/时间                   DATETIME
-' YESNO | BIT | BOOLEAN       是/否                       YESNO
-' BINARY                      二进制（固定长度）          BINARY(50)
-' OLEOBJECT | LONGBINARY      OLE 对象（图片/文件）       OLEOBJECT
-' GUID                        全局唯一标识符              GUID
-'============================================================================
-
-'============================================================================
-'                          Access SQL 标准写法
-'----------------------------------------------------------------------------
-' TEXT(n)                     短文本                      TEXT(50)
-' MEMO                        长文本                      MEMO
-' BYTE                        字节型                      BYTE
-' INTEGER                     整型                        INTEGER
-' LONG                        长整型                      LONG
-' SINGLE                      单精度                      SINGLE
-' DOUBLE                      双精度                      DOUBLE
-' DECIMAL(p,s)                十进制                      DECIMAL(10,2)
-' CURRENCY                    货币                        CURRENCY
-' DATETIME                    日期/时间                   DATETIME
-' YESNO                       是/否                       YESNO
-' BINARY(n)                   二进制                      BINARY(50)
-' OLEOBJECT                   OLE 对象                    OLEOBJECT
-' GUID                        GUID                        GUID
-' AUTOINCREMENT               自动编号                    AUTOINCREMENT
-'============================================================================
-
 Option Compare Database
 Option Explicit
 
@@ -93,7 +54,38 @@ Private Function IsEmptyString(ByVal str As Variant) As Boolean
     End If
 End Function
 
-
+' 处理字面量
+Private Function ToSqlLiteral(ByVal Value As Variant, Optional ByVal IsCondition As Boolean = False) As String
+    Dim space As String
+    space = ""
+    If IsCondition Then space = " "
+    Select Case VBA.VarType(Value)
+        Case VBA.vbString
+            If VBA.Left(Value, 4) = "[$$]" Then
+                ToSqlLiteral = space & VBA.Mid(Value, 5)
+            Else
+                ToSqlLiteral = space & "'" & VBA.Replace(Value, "'", "''") & "'"
+            End If
+        Case VBA.vbLong, VBA.vbInteger, VBA.vbDouble, VBA.vbSingle, VBA.vbCurrency, VBA.vbByte, VBA.vbDecimal
+            ToSqlLiteral = space & VBA.Trim(VBA.CStr(Value))
+        Case VBA.vbDate
+            If Value = VBA.Int(Value) Then
+                ToSqlLiteral = space & "#" & VBA.Format(Value, "yyyy-mm-dd") & "#"
+            Else
+                ToSqlLiteral = space & "#" & VBA.Format(Value, "yyyy-mm-dd hh:nn:ss") & "#"
+            End If
+        Case VBA.vbNull, VBA.vbEmpty
+            If IsCondition Then
+                ToSqlLiteral = " IS NULL"
+            Else
+                ToSqlLiteral = "NULL"
+            End If
+        Case VBA.vbBoolean
+            ToSqlLiteral = space & VBA.IIf(Value, "True", "False")
+        Case Else
+            ToSqlLiteral = space & VBA.CStr(Value)
+    End Select
+End Function
 
 
 '判断验证
@@ -312,20 +304,7 @@ Public Sub Field(ByVal FieldName As String, Optional ByVal Value As Variant, Opt
     End If
     If Not VBA.IsMissing(Value) Then
         If ValueCollection Is Nothing Then Set ValueCollection = New Collection
-        Select Case VBA.VarType(Value)
-            Case VBA.vbString
-                If VBA.Left(Value, 4) = "[$$]" Then
-                    ValueCollection.Add VBA.Mid(Value, 5)
-                Else
-                    ValueCollection.Add "'" & VBA.Replace(Value, "'", "''") & "'"
-                End If
-            Case VBA.vbDate
-                ValueCollection.Add "#" & VBA.Format(Value, "yyyy-mm-dd") & "#"
-            Case VBA.vbNull
-                ValueCollection.Add "NULL"
-            Case Else
-                ValueCollection.Add Value
-        End Select
+        ValueCollection.Add ToSqlLiteral(Value)
     End If
 End Sub
 
@@ -334,18 +313,7 @@ Public Sub Constant(ByVal Alias As String, ByVal Value As Variant)
     If IsEmptyString(Alias) Then Exit Sub
     If VBA.IsEmpty(Value) Then Exit Sub
     If FieldCollection Is Nothing Then Set FieldCollection = New Collection
-    Dim FieldName As String
-    Select Case VBA.VarType(Value)
-        Case VBA.vbString
-            FieldName = "'" & VBA.Replace(Value, "'", "''") & "'"
-        Case VBA.vbDate
-            FieldName = "#" & VBA.Format(Value, "yyyy-mm-dd") & "#"
-        Case VBA.vbNull
-            FieldName = "NULL"
-        Case Else
-            FieldName = VBA.CStr(Value)
-    End Select
-    FieldCollection.Add FieldName & " AS " & Alias
+    FieldCollection.Add ToSqlLiteral(Value) & " AS " & Alias
 End Sub
 
 '计算列
@@ -411,20 +379,7 @@ Public Sub Where(ByVal Condition As String, Optional ByVal Value As Variant)
     If IsEmptyString(Condition) Then Exit Sub
     If WhereCollection Is Nothing Then Set WhereCollection = New Collection
     If Not VBA.IsMissing(Value) Then
-        Select Case VBA.VarType(Value)
-            Case VBA.vbString
-                If Left(Value, 4) = "[$$]" Then
-                    WhereCollection.Add Condition & " " & Mid(Value, 5)
-                Else
-                    WhereCollection.Add Condition & " '" & Replace(Value, "'", "''") & "'"
-                End If
-            Case VBA.vbDate
-                WhereCollection.Add Condition & " #" & Format(Value, "yyyy-mm-dd") & "#"
-            Case VBA.vbNull
-                WhereCollection.Add Condition & " IS NULL"
-            Case Else
-                WhereCollection.Add Condition & " " & Value
-        End Select
+        WhereCollection.Add Condition & ToSqlLiteral(Value, True)
     Else
         WhereCollection.Add Condition
     End If
@@ -454,7 +409,10 @@ End Function
 
 ' 参数
 Public Sub Param(ByVal ParamName As String, ByVal Val As Variant, Optional ByVal ParamType As String)
-    If IsEmptyString(ParamName) Then Exit Sub
+    If IsEmptyString(ParamName) Then
+        Err.Raise 449, "SqlBuilder.Param", "参数名称不能为空"
+        Exit Sub
+    End If
     If ParamDefCollection Is Nothing Then Set ParamDefCollection = New Collection
     If ParamCollection Is Nothing Then Set ParamCollection = New Collection
     If ParamTypeCollection Is Nothing Then Set ParamTypeCollection = New Collection
@@ -555,20 +513,7 @@ Public Sub Having(ByVal Condition As String, Optional ByVal Value As Variant)
     If IsEmptyString(Condition) Then Exit Sub
     If HavingCollection Is Nothing Then Set HavingCollection = New Collection
     If Not VBA.IsMissing(Value) Then
-        Select Case VBA.VarType(Value)
-            Case VBA.vbString
-                If Left(Value, 4) = "[$$]" Then
-                    HavingCollection.Add Condition & " " & Mid(Value, 5)
-                Else
-                    HavingCollection.Add Condition & " '" & Replace(Value, "'", "''") & "'"
-                End If
-            Case VBA.vbDate
-                HavingCollection.Add Condition & " #" & Format(Value, "yyyy-mm-dd") & "#"
-            Case VBA.vbNull
-                HavingCollection.Add Condition & " IS NULL"
-            Case Else
-                HavingCollection.Add Condition & " " & Value
-        End Select
+        HavingCollection.Add Condition & ToSqlLiteral(Value, True)
     Else
         HavingCollection.Add Condition
     End If

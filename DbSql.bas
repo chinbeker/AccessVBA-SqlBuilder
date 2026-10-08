@@ -86,6 +86,9 @@ Public Function Parameter(ByVal ParamName As String) As String
         Err.Raise 449, "DbSql.Expression", "参数名称不能为空"
         Exit Function
     End If
+    ParamName = VBA.Replace(ParamName, " ", "_")
+    ParamName = VBA.Replace(ParamName, ".", "_")
+    ParamName = VBA.Replace(ParamName, "!", "_")
     Parameter = "[$$][Param_" & ParamName & "]"
 End Function
 
