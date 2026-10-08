@@ -59,13 +59,13 @@ Attribute VB_Exposed = False
 ' AUTOINCREMENT               自动编号                    AUTOINCREMENT
 '============================================================================
 
-
 Option Compare Database
 Option Explicit
 
 Private TopSqlString As String
 Private SelectAllField As Boolean
 Private IsDerivedTable As Boolean
+Private IsOpenSnapshot As Boolean
 Private DistinctSqlString As String
 Private FromTableName As String
 Private IntoTableName As String
@@ -82,6 +82,8 @@ Private ParamDefCollection As Collection
 Private ParamTypeCollection As Collection
 Private ParamCollection As Collection
 
+
+
 ' 判断空字符串
 Private Function IsEmptyString(ByVal str As Variant) As Boolean
     If VBA.VarType(str) = VBA.vbString Then
@@ -90,6 +92,9 @@ Private Function IsEmptyString(ByVal str As Variant) As Boolean
         IsEmptyString = True
     End If
 End Function
+
+
+
 
 '判断验证
 Private Function HasField() As Boolean
@@ -101,6 +106,7 @@ Private Function HasField() As Boolean
         HasField = (FieldCollection.Count > 0)
     End If
 End Function
+
 Private Function Validation() As Boolean
     If FieldCollection Is Nothing Or ValueCollection Is Nothing Then
         Validation = False
@@ -108,12 +114,15 @@ Private Function Validation() As Boolean
         Validation = (ValueCollection.Count > 0 And FieldCollection.Count = ValueCollection.Count)
     End If
 End Function
+
 Private Function HasInto() As Boolean
     HasInto = Not IsEmptyString(IntoTableName)
 End Function
+
 Private Function HasSource() As Boolean
     HasSource = Not IsEmptyString(FromTableName)
 End Function
+
 Private Function HasWhere() As Boolean
     If WhereCollection Is Nothing Then
         HasWhere = False
@@ -122,40 +131,58 @@ Private Function HasWhere() As Boolean
     End If
 End Function
 
+
+
+'--------------------------属性--------------------------------
 '是否使用参数
-Public Function HasParam() As Boolean
+Public Property Get HasParam() As Boolean
     If ParamDefCollection Is Nothing Or ParamTypeCollection Is Nothing Or ParamCollection Is Nothing Then
         HasParam = False
     Else
         HasParam = (ParamDefCollection.Count > 0 And ParamDefCollection.Count = ParamTypeCollection.Count And ParamDefCollection.Count = ParamCollection.Count)
     End If
-End Function
+End Property
+
 '是否作为派生表（子查询表）
-Public Function HasDerived() As Boolean
+Public Property Get HasDerived() As Boolean
     HasDerived = IsDerivedTable
-End Function
+End Property
 
 
+
+
+
+' --------------------------公共方法--------------------------------
 '指定记录数
-Public Sub Top(ByVal Value As Long)
-    If Value > 0 Then
-        TopSqlString = "TOP " & Value & " "
+Public Sub Top(ByVal Val As Long)
+    If Val > 0 Then
+        TopSqlString = "TOP " & Val & " "
     Else
         TopSqlString = ""
     End If
 End Sub
-'去除重复值
-Public Sub Distinct(Optional ByVal Value As Boolean = True)
-    If Value = True Then
+
+'唯一值
+Public Sub Distinct(Optional ByVal Val As Boolean = True)
+    If Val = True Then
         DistinctSqlString = "DISTINCT "
     Else
         DistinctSqlString = ""
     End If
 End Sub
-'选择全部字段
-Public Sub SelectAll(Optional ByVal Value As Boolean = True)
-    SelectAllField = Value
+
+'选择所有字段
+Public Sub SelectAll(Optional ByVal Val As Boolean = True)
+    SelectAllField = Val
 End Sub
+
+'选择所有字段
+Public Function ReadOnly(Optional ByVal Val As Boolean = True) As Boolean
+    If Not VBA.IsMissing(Val) Then IsOpenSnapshot = Val
+    ReadOnly = IsOpenSnapshot
+End Function
+
+
 
 
 ' 数据源
@@ -166,7 +193,7 @@ Public Sub From(ByRef FromTable As Variant, Optional ByVal Alias As String = "")
         Else
             FromTableName = FromTable
         End If
-    ElseIf TypeOf FromTable Is SqlBuilder Then
+    ElseIf VBA.IsObject(FromTable) And TypeOf FromTable Is SqlBuilder Then
         If Not IsEmptyString(Alias) Then FromTable.Derived Alias
         If FromTable.HasDerived Then
             FromTableName = FromTable.ToSqlString
@@ -206,7 +233,7 @@ Public Sub Join(ByRef JoinTable As Variant, ByVal SourceTable As String, ByVal J
     If JoinCollection Is Nothing Then Set JoinCollection = New Collection
     If VBA.VarType(JoinTable) = VBA.vbString And Not IsEmptyString(JoinTable) Then
         JoinCollection.Add " INNER JOIN " & JoinTable & " ON " & SourceTable & "." & SourceField & "=" & JoinTable & "." & JoinField
-    ElseIf TypeOf JoinTable Is SqlBuilder Then
+    ElseIf VBA.IsObject(JoinTable) And TypeOf JoinTable Is SqlBuilder Then
         If JoinTable.HasDerived Then
             JoinCollection.Add " INNER JOIN " & JoinTable.ToSqlString & " ON " & SourceTable & "." & SourceField & "=" & JoinTable.Alias & "." & JoinField
         Else
@@ -225,7 +252,7 @@ Public Sub LeftJoin(ByRef JoinTable As Variant, ByVal SourceTable As String, ByV
     If JoinCollection Is Nothing Then Set JoinCollection = New Collection
     If VBA.VarType(JoinTable) = VBA.vbString And Not IsEmptyString(JoinTable) Then
         JoinCollection.Add " LEFT JOIN " & JoinTable & " ON " & SourceTable & "." & SourceField & "=" & JoinTable & "." & JoinField
-    ElseIf TypeOf JoinTable Is SqlBuilder Then
+    ElseIf VBA.IsObject(JoinTable) And TypeOf JoinTable Is SqlBuilder Then
         If JoinTable.HasDerived Then
             JoinCollection.Add " LEFT JOIN " & JoinTable.ToSqlString & " ON " & SourceTable & "." & SourceField & "=" & JoinTable.Alias & "." & JoinField
         Else
@@ -426,42 +453,35 @@ End Function
 
 
 ' 参数
-Public Sub Param(ByVal ParamName As String, ByVal Value As Variant, Optional ByVal ParamType As String)
-    ParamName = Replace(ParamName, " ", "_")
+Public Sub Param(ByVal ParamName As String, ByVal Val As Variant, Optional ByVal ParamType As String)
     If IsEmptyString(ParamName) Then Exit Sub
     If ParamDefCollection Is Nothing Then Set ParamDefCollection = New Collection
     If ParamCollection Is Nothing Then Set ParamCollection = New Collection
     If ParamTypeCollection Is Nothing Then Set ParamTypeCollection = New Collection
-    ParamName = Replace(ParamName, ".", "_")
-    ParamName = Replace(ParamName, "!", "_")
+    ParamName = VBA.Replace(ParamName, " ", "_")
+    ParamName = VBA.Replace(ParamName, ".", "_")
+    ParamName = VBA.Replace(ParamName, "!", "_")
     ParamDefCollection.Add "Param_" & ParamName
-    ParamCollection.Add Value
+    ParamCollection.Add Val
     If VBA.IsMissing(ParamType) Or IsEmptyString(ParamType) Then
-        Select Case VBA.VarType(Value)
-            Case VBA.vbInteger
-                ParamTypeCollection.Add "Short"
-            Case VBA.vbLong
-                ParamTypeCollection.Add "Long"
-            Case VBA.vbSingle
-                ParamTypeCollection.Add "Single"
-            Case VBA.vbDouble
-                ParamTypeCollection.Add "Double"
-            Case VBA.vbCurrency
-                ParamTypeCollection.Add "Currency"
-            Case VBA.vbDate
-                ParamTypeCollection.Add "DateTime"
+        Select Case VBA.VarType(Val)
+            Case VBA.vbByte: ParamTypeCollection.Add "BYTE"
+            Case VBA.vbInteger: ParamTypeCollection.Add "INTEGER"
+            Case VBA.vbLong: ParamTypeCollection.Add "LONG"
+            Case VBA.vbSingle: ParamTypeCollection.Add "SINGLE"
+            Case VBA.vbDouble: ParamTypeCollection.Add "DOUBLE"
+            Case VBA.vbDecimal: ParamTypeCollection.Add "DECIMAL"
+            Case VBA.vbCurrency: ParamTypeCollection.Add "CURRENCY"
+            Case VBA.vbDate: ParamTypeCollection.Add "DATETIME"
+            Case VBA.vbBoolean: ParamTypeCollection.Add "YESNO"
+            Case VBA.vbLongLong: ParamTypeCollection.Add "BIGINT"
             Case VBA.vbString
-                ParamTypeCollection.Add "Text(255)"
-            Case VBA.vbBoolean
-                ParamTypeCollection.Add "Bit"
-            Case VBA.vbDecimal
-                ParamTypeCollection.Add "Decimal"
-            Case VBA.vbByte
-                ParamTypeCollection.Add "Byte"
-            Case VBA.vbLongLong
-                ParamTypeCollection.Add "LongLong"
-            Case Else
-                ParamTypeCollection.Add "Text(255)"
+                If VBA.Len(Value) > 255 Then
+                    ParamTypeCollection.Add "MEMO"
+                Else
+                    ParamTypeCollection.Add "Text(255)"
+                End If
+            Case Else: ParamTypeCollection.Add "Text(255)"
         End Select
     Else
         ParamTypeCollection.Add ParamType
@@ -469,7 +489,7 @@ Public Sub Param(ByVal ParamName As String, ByVal Value As Variant, Optional ByV
 End Sub
 
 Public Sub SetQueryDef(ByRef Def As DAO.QueryDef)
-    If HasParam Then
+    If Me.HasParam Then
         Dim i As Long
         Dim Length As Long
         Length = ParamDefCollection.Count
@@ -480,7 +500,7 @@ Public Sub SetQueryDef(ByRef Def As DAO.QueryDef)
 End Sub
 
 Private Function ToParamDefSqlString() As String
-    If HasParam Then
+    If Me.HasParam Then
         If Not ParamDefCollection Is Nothing Then
             If ParamDefCollection.Count > 0 Then
                 Dim i As Long
@@ -690,7 +710,17 @@ Public Function ToSqlString(Optional ByVal Operation As Byte = 0, Optional ByVal
     End If
 End Function
 
-Private Sub Class_Terminate()
+'复用重置对象
+Public Sub Reset()
+    TopSqlString = ""
+    SelectAllField = False
+    IsDerivedTable = False
+    IsOpenSnapshot = False
+    DistinctSqlString = ""
+    FromTableName = ""
+    IntoTableName = ""
+    DerivedTableName = ""
+
     Set FieldCollection = Nothing
     Set ValueCollection = Nothing
     Set JoinCollection = Nothing
@@ -701,4 +731,8 @@ Private Sub Class_Terminate()
     Set ParamDefCollection = Nothing
     Set ParamTypeCollection = Nothing
     Set ParamCollection = Nothing
+End Sub
+
+Private Sub Class_Terminate()
+    Call Reset
 End Sub
