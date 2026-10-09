@@ -140,23 +140,24 @@ Public Property Get HasDerived() As Boolean
     HasDerived = IsDerivedTable
 End Property
 
-
-
-
+'派生表别名
+Public Property Get Alias() As String
+    Alias = DerivedTableName
+End Property
 
 ' --------------------------公共方法--------------------------------
 '指定记录数
-Public Sub Top(ByVal Val As Long)
-    If Val > 0 Then
-        TopSqlString = "TOP " & Val & " "
+Public Sub Top(ByVal Value As Long)
+    If Value > 0 Then
+        TopSqlString = "TOP " & Value & " "
     Else
         TopSqlString = ""
     End If
 End Sub
 
 '唯一值
-Public Sub Distinct(Optional ByVal Val As Boolean = True)
-    If Val = True Then
+Public Sub Distinct(Optional ByVal Value As Boolean = True)
+    If Value = True Then
         DistinctSqlString = "DISTINCT "
     Else
         DistinctSqlString = ""
@@ -164,16 +165,15 @@ Public Sub Distinct(Optional ByVal Val As Boolean = True)
 End Sub
 
 '选择所有字段
-Public Sub SelectAll(Optional ByVal Val As Boolean = True)
-    SelectAllField = Val
+Public Sub SelectAll(Optional ByVal Value As Boolean = True)
+    SelectAllField = Value
 End Sub
 
 '选择所有字段
-Public Function ReadOnly(Optional ByVal Val As Boolean = True) As Boolean
-    If Not VBA.IsMissing(Val) Then IsOpenSnapshot = Val
+Public Function ReadOnly(Optional ByVal Value As Boolean = True) As Boolean
+    If Not VBA.IsMissing(Value) Then IsOpenSnapshot = Value
     ReadOnly = IsOpenSnapshot
 End Function
-
 
 
 
@@ -197,13 +197,12 @@ Public Sub From(ByRef FromTable As Variant, Optional ByVal Alias As String = "")
     End If
 End Sub
 
+' 插入表
 Public Sub Into(ByVal TableName As String)
     If Not IsEmptyString(TableName) Then IntoTableName = TableName
 End Sub
 
-Public Function Alias() As String
-    Alias = DerivedTableName
-End Function
+
 
 '开启子查询的派生表，设置别名
 Public Sub Derived(ByVal Alias As String)
@@ -408,7 +407,7 @@ End Function
 
 
 ' 参数
-Public Sub Param(ByVal ParamName As String, ByVal Val As Variant, Optional ByVal ParamType As String)
+Public Sub Param(ByVal ParamName As String, ByVal Value As Variant, Optional ByVal ParamType As String)
     If IsEmptyString(ParamName) Then
         Err.Raise 449, "SqlBuilder.Param", "参数名称不能为空"
         Exit Sub
@@ -420,9 +419,9 @@ Public Sub Param(ByVal ParamName As String, ByVal Val As Variant, Optional ByVal
     ParamName = VBA.Replace(ParamName, ".", "_")
     ParamName = VBA.Replace(ParamName, "!", "_")
     ParamDefCollection.Add "Param_" & ParamName
-    ParamCollection.Add Val
+    ParamCollection.Add Value
     If VBA.IsMissing(ParamType) Or IsEmptyString(ParamType) Then
-        Select Case VBA.VarType(Val)
+        Select Case VBA.VarType(Value)
             Case VBA.vbByte: ParamTypeCollection.Add "BYTE"
             Case VBA.vbInteger: ParamTypeCollection.Add "INTEGER"
             Case VBA.vbLong: ParamTypeCollection.Add "LONG"
