@@ -17,10 +17,13 @@
 #### 查询设置
 | 方法 | 说明 |
 |------|------|
-| `SelectAll` | 选择全部字段 |
-| `Top value` | 指定返回记录数 |
+| `ReadOnly` | 设置记录级为快照（默认为动态集） |
 | `Distinct` | 去除重复值 |
-| `Field name, [value], [alias]` | 添加字段 |
+| `Top value` | 指定返回记录数 |
+| `SelectAll` | 选择全部字段 |
+| `Field name, [value], [alias]` | 选择查询字段 |
+| `Constant alias, value` | 添加常量字段 |
+| `Computed alias, expr` | 添加计算字段 |
 | `From table, [alias]` | 设置数据源 |
 | `Derived alias` | 设置为派生表 |
 
@@ -48,50 +51,56 @@
 
 ### DbSql 模块方法
 
-#### 连接与基础操作
+#### 数据库操作
+| 方法 | 说明 |
+|------|------|
+| `UseCustomDatabase(database)` | 使用传入的数据库 |
+| `UseDefaultDatabase(database)` | 恢复使用默认数据库 |
+
+#### 辅助方法
+| 方法 | 说明 | 返回值 |
+|------|------|--------|
+| `Parameter(name)` | 引用参数（不被转义） | String |
+| `Field(name)` | 引用字段（不被转义） | String |
+| `Expression(expr)` | 引用表达式（不被转义） | String |
+
+#### 基础操作
 | 方法 | 说明 | 返回值 |
 |------|------|--------|
 | `SelectDynaset(sqlString)` | 运行查询SQL，返回动态集 | DAO.Recordset |
 | `SelectSnapshot(sqlString)` | 运行查询SQL，返回快照 | DAO.Recordset |
 | `Execute(sqlString)` | 运行非查询SQL | Long |
-| `TableDef(name)` | 获取表定义 | DAO.TableDef |
-
-#### 打开整张表
-| 方法 | 说明 | 返回值 |
-|------|------|--------|
-| `OpenTable(name)` | 打开本地表 | DAO.Recordset |
-| `TableDynaset(name)` | 以动态集打开整张表 | DAO.Recordset |
-| `TableSnapshot(name)` | 以快照打开整张表 | DAO.Recordset |
 
 #### 增删改操作
 | 方法 | 说明 | 返回值 |
 |------|------|--------|
-| `Insert(table, sql)` | 插入数据 | Long |
-| `Update(table, sql)` | 更新数据 | Long |
-| `Delete(table, sql)` | 删除数据 | Long |
-| `Clear(table)` | 清空表数据 | Long |
+| `Insert(table, sql)` | 插入记录 | Long |
+| `Update(table, sql)` | 更改记录 | Long |
+| `Delete(table, condition)` | 删除记录（快速） | Long |
+| `DeleteFind(table, sql)` | 删除记录（复杂查询） | Long |
+| `Clear(table)` | 清空表所有数据 | Long |
+
+#### 快速查询表格记录
+| 方法 | 说明 | 返回值 |
+|------|------|--------|
+| `TableDef(name)` | 获取表定义 | DAO.TableDef |
+| `OpenTable(name, [readonly])` | 打开整张表 | DAO.Recordset |
+| `TableFirst(table, [orderBy], [readonly])` | 表格第一条记录 | DAO.Recordset |
+| `TableLast(table, orderByField, [readonly])` | 表格最后一条记录 | DAO.Recordset |
+| `TableFind(table, condition, [readonly])` | 查询记录集 | DAO.Recordset |
+| `TableFindFirst(table, condition, [orderBy], [readonly])` | 查询记录集第一条记录 | DAO.Recordset |
 
 #### 查询记录集
 | 方法 | 说明 | 返回值 |
 |------|------|--------|
-| `Find(sql)` | 返回记录集（快照） | DAO.Recordset |
-| `Record(sql)` | 返回记录集（动态集） | DAO.Recordset |
-| `First(sql)` | 返回第一条记录（快照） | DAO.Recordset |
-| `FirstRecord(sql)` | 返回第一条记录（动态集） | DAO.Recordset |
-
-#### 表格首尾记录
-| 方法 | 说明 | 返回值 |
-|------|------|--------|
-| `TableFirst(table, [orderBy])` | 表格第一条记录（快照） | DAO.Recordset |
-| `TableFirstRecord(table, [orderBy])` | 表格第一条记录（动态集） | DAO.Recordset |
-| `TableLast(table, [orderBy])` | 表格最后一条记录（快照） | DAO.Recordset |
-| `TableLastRecord(table, [orderBy])` | 表格最后一条记录（动态集） | DAO.Recordset |
+| `Find(sql)` | 返回记录集 | DAO.Recordset |
+| `First(sql)` | 返回第一条记录 | DAO.Recordset |
 
 #### 统计数量
 | 方法 | 说明 | 返回值 |
 |------|------|--------|
-| `Count(sql)` | 统计记录数 | Long |
-| `TableCount(table)` | 统计整张表记录数 | Long |
+| `TableCount(table, [condition])` | 统计表记录数 | Long |
+| `FindCount(sql)` | 统计记录数 | Long |
 
 #### 获取单个值
 | 方法 | 说明 | 返回值 |
@@ -112,13 +121,6 @@
 |------|------|--------|
 | `Union(sql1, sql2, ...)` | 联合查询（去重） | DAO.Recordset |
 | `UnionAll(sql1, sql2, ...)` | 联合查询（含重复） | DAO.Recordset |
-
-#### 辅助方法
-| 方法 | 说明 | 返回值 |
-|------|------|--------|
-| `Parameter(name)` | 引用参数（不被转义） | String |
-| `Field(name)` | 引用字段（不被转义） | String |
-| `Expression(expr)` | 引用表达式（不被转义） | String |
 
 
 <br>
@@ -182,10 +184,15 @@ Public Sub SpecificFieldsExample()
     Dim sql As New SqlBuilder
     Dim rs As DAO.Recordset
 
-    ' SELECT UserID, Name, Email FROM Users WHERE Status = 'Active'
+    ' SELECT UserID, First_Name, Last_Name, First_Name & Last_Name AS FullName, "US" AS Country
+    ' FROM Users
+    ' WHERE Status = 'Active'
+
     sql.Field "UserID"
-    sql.Field "Name"
-    sql.Field "Email"
+    sql.Field "First_Name"
+    sql.Field "Last_Name"
+    sql.Computed "FullName", "First_Name & Last_Name"    '计算字段
+    sql.Constant "Country", "US"                         '常量字段
     sql.From "Users"
     sql.Where "Status =", "Active"
 
@@ -251,13 +258,17 @@ End Sub
 
 ```vba
 Public Sub DeleteExample()
-    Dim sql As New SqlBuilder
     Dim AffectedRows As Long
 
     ' DELETE FROM Users WHERE Status = 'Inactive'
-    sql.Where "Status =", "Inactive"
 
-    AffectedRows = DbSql.Delete("Users", sql)
+    ' 快速方法
+    AffectedRows = DbSql.Delete("Users", "Status = 'Inactive'")
+
+    ' 复杂查询
+    Dim sql As New SqlBuilder
+    sql.Where "Status =", "Inactive"
+    AffectedRows = DbSql.DeleteFind("Users", sql)
 
     Debug.Print "删除了 " & AffectedRows & " 行"
 End Sub

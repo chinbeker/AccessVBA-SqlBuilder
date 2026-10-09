@@ -372,28 +372,16 @@ ErrorHandler:
     Exit Function
 End Function
 
-' 统计数量
-Public Function Count(ByVal TableName As String, ByVal Condition As String) As Long
+
+' 统计记录数
+Public Function TableCount(ByVal TableName As String, Optional ByVal Condition As String) As Long
     On Error GoTo ErrorHandler
     If IsEmptyString(TableName) Then Exit Function
-    If IsEmptyString(Condition) Then
-        Err.Raise 449, "DbSql.Count", "查询条件不能为空"
-        Exit Function
+    If Not VBA.IsMissing(Condition) And Not IsEmptyString(Condition) Then
+        TableCount = Application.DCount("*", TableName, Condition)
+    Else
+        TableCount = Application.DCount("*", TableName)
     End If
-    Count = Application.DCount("*", TableName, Condition)
-    Exit Function
-
-ErrorHandler:
-    Err.Raise Err.Number, "DbSql.Count" & vbCrLf & Err.Source, Err.Description
-    Exit Function
-End Function
-
-
-' 统计整张表格数量
-Public Function TableCount(ByVal TableName As String) As Long
-    On Error GoTo ErrorHandler
-    If IsEmptyString(TableName) Then Exit Function
-    TableCount = Application.DCount("*", TableName)
     Exit Function
 
 ErrorHandler:
@@ -401,7 +389,7 @@ ErrorHandler:
     Exit Function
 End Function
 
-' 统计数量
+' 统计记录数
 Public Function FindCount(ByRef Sql As SqlBuilder) As Long
     On Error GoTo ErrorHandler
     Dim SqlString As String
