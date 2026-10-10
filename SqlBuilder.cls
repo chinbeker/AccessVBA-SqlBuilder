@@ -134,7 +134,10 @@ Public Property Get HasParam() As Boolean
         HasParam = (ParamDefCollection.Count > 0 And ParamDefCollection.Count = ParamTypeCollection.Count And ParamDefCollection.Count = ParamCollection.Count)
     End If
 End Property
-
+'是否为动态记录集
+Public Property Get IsDynaset() As String
+    IsDynaset = (Not IsOpenSnapshot)
+End Property
 '是否作为派生表（子查询表）
 Public Property Get HasDerived() As Boolean
     HasDerived = IsDerivedTable
@@ -145,7 +148,14 @@ Public Property Get Alias() As String
     Alias = DerivedTableName
 End Property
 
+
+
 ' --------------------------公共方法--------------------------------
+
+'设置为快照记录集
+Public Sub ReadOnly(Optional ByVal Value As Boolean = True)
+    IsOpenSnapshot = Value
+End Sub
 '指定记录数
 Public Sub Top(ByVal Value As Long)
     If Value > 0 Then
@@ -169,11 +179,6 @@ Public Sub SelectAll(Optional ByVal Value As Boolean = True)
     SelectAllField = Value
 End Sub
 
-'选择所有字段
-Public Function ReadOnly(Optional ByVal Value As Boolean = True) As Boolean
-    If Not VBA.IsMissing(Value) Then IsOpenSnapshot = Value
-    ReadOnly = IsOpenSnapshot
-End Function
 
 
 

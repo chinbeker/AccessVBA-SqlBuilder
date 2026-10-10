@@ -315,7 +315,7 @@ Public Function Delete(ByVal TableName As String, ByVal Condition As String) As 
     On Error GoTo ErrorHandler
     If IsEmptyString(TableName) Then Exit Function
     If IsEmptyString(Condition) Then
-        Err.Raise 449, "DbSql.Delete", "DELETE 必须定义 WHERE 语句"
+        Err.Raise 449, "DbSql.Delete", "删除条件不能为空"
         Exit Function
     End If
     Dim SqlString As String
@@ -426,18 +426,18 @@ Public Function Find(ByRef Sql As SqlBuilder) As DAO.Recordset
         Dim Def As DAO.QueryDef
         Set Def = CurrentDatabase.CreateQueryDef("", SqlString)
         Sql.SetQueryDef Def
-        If Sql.ReadOnly Then
-            Set Find = Def.OpenRecordset(dbOpenSnapshot)
-        Else
+        If Sql.IsDynaset Then
             Set Find = Def.OpenRecordset(dbOpenDynaset, dbSeeChanges)
+        Else
+            Set Find = Def.OpenRecordset(dbOpenSnapshot)
         End If
         Def.Close
         Set Def = Nothing
     Else
-        If Sql.ReadOnly Then
-            Set Find = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
-        Else
+        If Sql.IsDynaset Then
             Set Find = CurrentDatabase.OpenRecordset(SqlString, dbOpenDynaset, dbSeeChanges)
+        Else
+            Set Find = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
         End If
     End If
     Exit Function
@@ -458,18 +458,18 @@ Public Function First(ByRef Sql As SqlBuilder) As DAO.Recordset
         Dim Def As DAO.QueryDef
         Set Def = CurrentDatabase.CreateQueryDef("", SqlString)
         Sql.SetQueryDef Def
-        If Sql.ReadOnly Then
-            Set First = Def.OpenRecordset(dbOpenSnapshot)
-        Else
+        If Sql.IsDynaset Then
             Set First = Def.OpenRecordset(dbOpenDynaset, dbSeeChanges)
+        Else
+            Set First = Def.OpenRecordset(dbOpenSnapshot)
         End If
         Def.Close
         Set Def = Nothing
     Else
-        If Sql.ReadOnly Then
-            Set First = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
-        Else
+        If Sql.IsDynaset Then
             Set First = CurrentDatabase.OpenRecordset(SqlString, dbOpenDynaset, dbSeeChanges)
+        Else
+            Set First = CurrentDatabase.OpenRecordset(SqlString, dbOpenSnapshot)
         End If
     End If
     Sql.Top 0

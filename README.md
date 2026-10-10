@@ -136,6 +136,8 @@ Public Sub BasicQueryExample()
     Dim rs As DAO.Recordset
 
     ' 构建查询：SELECT * FROM Users WHERE Age > 18 ORDER BY Name
+    sql.ReadOnly    '快照记录集
+
     sql.SelectAll
     sql.From "Users"
     sql.Where "Age >", 18
