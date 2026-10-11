@@ -128,6 +128,7 @@
 
 ## 🚀 快速开始
 
+
 ### 1. 基本查询
 
 ```vba
@@ -157,25 +158,28 @@ Public Sub BasicQueryExample()
 End Sub
 ```
 
-### 2. 参数化查询
+### 2. 引用字段和表达式
 
 ```vba
-Public Sub ParameterizedQueryExample()
+Public Sub FieldValueReferenceExample()
     Dim sql As New SqlBuilder
     Dim rs As DAO.Recordset
 
-    ' 使用参数，防止 SQL 注入
-    sql.SelectAll
-    sql.From "Employees"
-    sql.Where "Department =", DbSql.Parameter("Dept")
-    sql.Where "Salary >", DbSql.Parameter("MinSalary")
+    ' 使用 DbSql.Field 引用字段（不会被转义）
+    ' DbSql.Field() 的作用是告诉 SQL 构建器：这是一个字段名，不要加引号转义
 
-    ' 参数赋值
-    sql.Param "Dept", "Sales"
-    sql.Param "MinSalary", 50000
+    sql.Field "UserId", DbSql.Field("Users.UserId")          '参数值是另一个表的字段
+    sql.From "Users"
+    DbSql.Insert "Employees", Sql
 
-    Set rs = DbSql.Find(sql)
-    ' 处理结果...
+
+    Set sql = New SqlBuilder
+
+    ' 使用 DbSql.Expression 包裹表达式（不会被转义）
+    sql.Field "Name", DbSql.Expression("Trim([Name])")       '参数值是个表达式
+
+    DbSql.Update "Employees", Sql
+
 End Sub
 ```
 
@@ -203,7 +207,30 @@ Public Sub SpecificFieldsExample()
 End Sub
 ```
 
-### 4. 字段别名
+### 4. 参数化查询
+
+```vba
+Public Sub ParameterizedQueryExample()
+    Dim sql As New SqlBuilder
+    Dim rs As DAO.Recordset
+
+    ' 使用参数，防止 SQL 注入
+    sql.SelectAll
+    sql.From "Employees"
+    sql.Where "Department =", DbSql.Parameter("Dept")
+    sql.Where "Salary >", DbSql.Parameter("MinSalary")
+
+    ' 参数赋值
+    sql.Param "Dept", "Sales"
+    sql.Param "MinSalary", 50000
+
+    Set rs = DbSql.Find(sql)
+    ' 处理结果...
+End Sub
+```
+
+
+### 5. 字段别名
 
 ```vba
 Public Sub AliasExample()
@@ -220,7 +247,7 @@ Public Sub AliasExample()
 End Sub
 ```
 
-### 5. 插入数据
+### 6. 插入数据
 
 ```vba
 Public Sub InsertExample()
@@ -238,7 +265,7 @@ Public Sub InsertExample()
 End Sub
 ```
 
-### 6. 更新数据
+### 7. 更新数据
 
 ```vba
 Public Sub UpdateExample()
@@ -256,7 +283,7 @@ Public Sub UpdateExample()
 End Sub
 ```
 
-### 7. 删除数据
+### 8. 删除数据
 
 ```vba
 Public Sub DeleteExample()
@@ -276,7 +303,20 @@ Public Sub DeleteExample()
 End Sub
 ```
 
-### 8. 表连接（INNER JOIN）
+### 9. 清空表数据
+
+```vba
+Public Sub ClearTableExample()
+    Dim AffectedRows As Long
+
+    ' 删除表中的所有数据
+    AffectedRows = DbSql.Clear("TempTable")
+
+    Debug.Print "删除了 " & AffectedRows & " 行"
+End Sub
+```
+
+### 10. 表连接（INNER JOIN）
 
 ```vba
 Public Sub JoinExample()
@@ -296,7 +336,7 @@ Public Sub JoinExample()
 End Sub
 ```
 
-### 9. 左连接（LEFT JOIN）
+### 11. 左连接（LEFT JOIN）
 
 ```vba
 Public Sub LeftJoinExample()
@@ -318,7 +358,7 @@ Public Sub LeftJoinExample()
 End Sub
 ```
 
-### 10. 分组与聚合
+### 12. 分组与聚合
 
 ```vba
 Public Sub GroupByExample()
@@ -341,7 +381,7 @@ Public Sub GroupByExample()
 End Sub
 ```
 
-### 11. 子查询（派生表）
+### 13. 子查询（派生表）
 
 ```vba
 ' 示例1：FROM 子查询（将子查询作为数据源）
@@ -392,7 +432,7 @@ Public Sub SubQueryExample()
 End Sub
 ```
 
-### 12. TOP N 查询
+### 14. TOP N 查询
 
 ```vba
 Public Sub TopExample()
@@ -411,7 +451,7 @@ Public Sub TopExample()
 End Sub
 ```
 
-### 13. DISTINCT 去重查询
+### 15. DISTINCT 去重查询
 
 ```vba
 Public Sub DistinctExample()
@@ -428,7 +468,20 @@ Public Sub DistinctExample()
 End Sub
 ```
 
-### 14. 统计数量
+### 16. 获取表记录数
+
+```vba
+Public Sub TableCountExample()
+    Dim TotalCount As Long
+
+    ' 统计表中的总记录数
+    TotalCount = DbSql.TableCount("Users")
+
+    Debug.Print "用户表共有 " & TotalCount & " 条记录"
+End Sub
+```
+
+### 17. 统计数量
 
 ```vba
 Public Sub CountExample()
@@ -439,12 +492,40 @@ Public Sub CountExample()
     sql.From "Users"
     sql.Where "Status =", "Active"
 
-    TotalCount = DbSql.Count(sql)
+    TotalCount = DbSql.FindCount(sql)
+
+    '或者使用快速方法
+    TotalCount = DbSql.TableCount("Users", "Status = Active")
+
     Debug.Print "活跃用户数：" & TotalCount
 End Sub
 ```
 
-### 15. 快捷查询方法
+### 18. 获取单个值
+
+```vba
+Public Sub GetSingleValueExample()
+    Dim sql As New SqlBuilder
+    Dim UserName As Variant
+
+    ' 用于复杂的SQL查询，简单的请用快速查询
+
+    ' 获取用户ID为1001的用户名
+    sql.Field "Name"
+    sql.From "Users"
+    sql.Where "UserID =", 1001
+
+    UserName = DbSql.GetValue(sql)
+
+    If Not IsNull(UserName) Then
+        Debug.Print "用户名：" & UserName
+    Else
+        Debug.Print "用户不存在"
+    End If
+End Sub
+```
+
+### 19. 快捷查询方法
 
 ```vba
 Public Sub QuickQueryExample()
@@ -469,7 +550,7 @@ Public Sub QuickQueryExample()
 End Sub
 ```
 
-### 16. 联合查询（UNION）
+### 20. 联合查询（UNION）
 
 ```vba
 Public Sub UnionExample()
@@ -493,80 +574,5 @@ Public Sub UnionExample()
 
     ' UNION ALL（包含重复）
     Set rs = DbSql.UnionAll(sql1, sql2, sql3)
-End Sub
-```
-
-### 17. 获取单个值
-
-```vba
-Public Sub GetSingleValueExample()
-    Dim sql As New SqlBuilder
-    Dim UserName As Variant
-
-    ' 用于复杂的SQL查询，简单的请用快速查询
-
-    ' 获取用户ID为1001的用户名
-    sql.Field "Name"
-    sql.From "Users"
-    sql.Where "UserID =", 1001
-
-    UserName = DbSql.GetValue(sql)
-
-    If Not IsNull(UserName) Then
-        Debug.Print "用户名：" & UserName
-    Else
-        Debug.Print "用户不存在"
-    End If
-End Sub
-```
-
-### 18. 引用字段和表达式
-
-```vba
-Public Sub FieldValueReferenceExample()
-    Dim sql As New SqlBuilder
-    Dim rs As DAO.Recordset
-
-    ' 使用 DbSql.Field 引用字段（不会被转义）
-    ' DbSql.Field() 的作用是告诉 SQL 构建器：这是一个字段名，不要加引号转义
-
-    sql.Field "UserId", DbSql.Field("Users.UserId")          '值是另一个表的字段
-    sql.From "Users"
-    DbSql.Insert "Employees", Sql
-
-
-    Set sql = New SqlBuilder
-
-    ' 使用 DbSql.Expression 包裹表达式（不会被转义）
-    sql.Field "Name", DbSql.Expression("Trim([Name])")       '值是个表达式，要去除首位空格
-
-    DbSql.Update "Employees", Sql
-
-End Sub
-```
-
-### 19. 清空表数据
-
-```vba
-Public Sub ClearTableExample()
-    Dim AffectedRows As Long
-
-    ' 删除表中的所有数据
-    AffectedRows = DbSql.Clear("TempTable")
-
-    Debug.Print "删除了 " & AffectedRows & " 行"
-End Sub
-```
-
-### 20. 获取表记录数
-
-```vba
-Public Sub TableCountExample()
-    Dim TotalCount As Long
-
-    ' 统计表中的总记录数
-    TotalCount = DbSql.TableCount("Users")
-
-    Debug.Print "用户表共有 " & TotalCount & " 条记录"
 End Sub
 ```
